@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Tables</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .tables-layout {
+      display: grid;
+      grid-template-columns: 1fr 360px;
+      gap: 28px;
+      align-items: start;
+    }
+    .floor-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(170px, 1fr));
+      gap: 20px;
+      margin-bottom: 32px;
+    }
+    .table-card {
+      background: var(--bg-card); border: 2px solid var(--border);
+      border-radius: var(--radius-lg); padding: 22px 18px;
+      text-align: center; cursor: pointer; transition: var(--transition);
+      animation: fadeInUp 0.4s ease both; position: relative;
+      user-select: none;
+    }
+    .table-card:hover { transform: translateY(-4px); box-shadow: var(--shadow-card); }
+    .table-card.open   { border-color: rgba(76,175,130,0.5); background: rgba(76,175,130,0.04); }
+    .table-card.busy   { border-color: rgba(224,92,92,0.5);  background: rgba(224,92,92,0.04); }
+    .table-card.reserved { border-color: rgba(232,160,76,0.5); background: rgba(232,160,76,0.04); }
+    .table-card.cleaning { border-color: rgba(92,158,224,0.5); background: rgba(92,158,224,0.04); }
+    .table-card.selected { box-shadow: 0 0 0 3px var(--gold), var(--shadow-card); }
+
+    .table-icon { font-size: 36px; margin-bottom: 10px; display: block; }
+    .table-id {
+      font-family: 'Cormorant Garamond', serif; font-size: 20px; font-weight: 700;
+      color: var(--text-primary); margin-bottom: 4px;
+    }
+    .table-capacity { font-size: 12px; color: var(--text-muted); margin-bottom: 10px; }
+    .table-status-badge {
+      font-size: 11px; font-weight: 600; padding: 4px 12px;
+      border-radius: 99px; display: inline-block;
+    }
+    .table-card.open .table-status-badge   { background: rgba(76,175,130,0.15);  color: #4caf82; }
+    .table-card.busy .table-status-badge   { background: rgba(224,92,92,0.15);   color: #e05c5c; }
+    .table-card.reserved .table-status-badge { background: rgba(232,160,76,0.15); color: #e8a04c; }
+    .table-card.cleaning .table-status-badge { background: rgba(92,158,224,0.15); color: #5c9ee0; }
+
+    .table-guests { font-size: 11px; color: var(--text-muted); margin-top: 6px; }
+
+    .timer-badge {
+      position: absolute; top: 10px; right: 10px;
+      background: rgba(0,0,0,0.6); border-radius: 6px;
+      font-size: 11px; font-weight: 600; padding: 2px 8px;
+      color: var(--text-secondary);
+    }
+
+    /* Detail panel */
+    .detail-panel {
+      position: sticky; top: 32px;
+    }
+    .detail-empty {
+      text-align: center; padding: 48px 20px;
+      color: var(--text-muted);
+    }
+    .detail-empty .de-icon { font-size: 40px; margin-bottom: 12px; }
+
+    .detail-section { margin-bottom: 20px; }
+    .detail-section-title {
+      font-size: 11px; text-transform: uppercase; letter-spacing: 2px;
+      color: var(--text-muted); font-weight: 600; margin-bottom: 10px;
+    }
+
+    .action-btns { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; }
+
+    .floor-section-label {
+      font-size: 13px; font-weight: 600; color: var(--text-muted);
+      text-transform: uppercase; letter-spacing: 2px;
+      margin-bottom: 14px; display: flex; align-items: center; gap: 10px;
+    }
+    .floor-section-label::after {
+      content: ''; flex: 1; height: 1px; background: var(--border);
+    }
+
+    .legend { display: flex; flex-wrap: wrap; gap: 16px; margin-bottom: 24px; }
+    .legend-item { display: flex; align-items: center; gap: 8px; font-size: 12px; color: var(--text-secondary); }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .legend-dot.open     { background: #4caf82; }
+    .legend-dot.busy     { background: #e05c5c; }
+    .legend-dot.reserved { background: #e8a04c; }
+    .legend-dot.cleaning { background: #5c9ee0; }
+
+    .reservation-row {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 14px; background: var(--bg-surface); border-radius: 8px;
+      border: 1px solid var(--border); margin-bottom: 8px;
+      font-size: 13px;
+    }
+    .reservation-time { color: var(--gold-light); font-weight: 600; }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span>
+    <h1>Saveur</h1>
+    <span>Restaurant Suite</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+    <a href="order.html" class="nav-link"><span class="nav-icon">📋</span><span>Orders</span><span class="nav-badge">5</span></a>
+    <a href="menu.html" class="nav-link"><span class="nav-icon">🧾</span><span>Menu</span></a>
+    <a href="tables.html" class="nav-link active"><span class="nav-icon">🪑</span><span>Tables</span></a>
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link"><span class="nav-icon">👤</span><span>Customers</span></a>
+    <a href="staff.html" class="nav-link"><span class="nav-icon">👨‍🍳</span><span>Staff</span></a>
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html" class="nav-link"><span class="nav-icon">📈</span><span>Reports</span></a>
+    <a href="feedback.html" class="nav-link"><span class="nav-icon">⭐</span><span>Feedback</span></a>
+    <a href="settings.html" class="nav-link"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+  </nav>
+    <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div class="breadcrumb">Table Management</div>
+    <h2>Tables & Seating 🪑</h2>
+    <p>Manage table status, reservations and guest assignments.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">🟢</span>
+      <div class="stat-label">Available</div>
+      <div class="stat-value" id="openCount">0</div>
+      <div class="stat-change">Ready to seat</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🔴</span>
+      <div class="stat-label">Occupied</div>
+      <div class="stat-value" id="busyCount">0</div>
+      <div class="stat-change">Currently serving</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🟡</span>
+      <div class="stat-label">Reserved</div>
+      <div class="stat-value" id="resCount">0</div>
+      <div class="stat-change">Upcoming bookings</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">👥</span>
+      <div class="stat-label">Guests In</div>
+      <div class="stat-value" id="guestCount">0</div>
+      <div class="stat-change">Currently seated</div>
+    </div>
+  </div>
+
+  <!-- Legend -->
+  <div class="legend">
+    <div class="legend-item"><div class="legend-dot open"></div> Available</div>
+    <div class="legend-item"><div class="legend-dot busy"></div> Occupied</div>
+    <div class="legend-item"><div class="legend-dot reserved"></div> Reserved</div>
+    <div class="legend-item"><div class="legend-dot cleaning"></div> Cleaning</div>
+  </div>
+
+  <div class="tables-layout">
+    <!-- Floor plan -->
+    <div>
+      <div class="floor-section-label">Main Hall — 8 tables</div>
+      <div class="floor-grid" id="mainHall"></div>
+
+      <div class="floor-section-label">Terrace — 4 tables</div>
+      <div class="floor-grid" id="terrace"></div>
+
+      <div class="floor-section-label">Private Room — 2 tables</div>
+      <div class="floor-grid" id="privateRoom"></div>
+    </div>
+
+    <!-- Detail Panel -->
+    <div class="detail-panel">
+      <div class="card" id="detailPanel">
+        <div class="detail-empty">
+          <div class="de-icon">🪑</div>
+          <p style="font-size:14px;color:var(--text-secondary);">Select a table to manage it</p>
+        </div>
+      </div>
+
+      <!-- Upcoming Reservations -->
+      <div class="card" style="margin-top:20px;">
+        <div class="card-header" style="margin-bottom:16px;">
+          <div class="card-title" style="font-size:16px;">Today's Reservations</div>
+          <button class="btn btn-outline btn-sm" onclick="openReserveModal()">+ Add</button>
+        </div>
+        <div id="reservationList"></div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Assign/Update Modal -->
+<div class="modal-overlay" id="tableModal">
+  <div class="modal">
+    <div class="modal-title" id="tableModalTitle">Update Table</div>
+    <div class="modal-subtitle" id="tableModalSub">Change status or assign guests</div>
+    <input type="hidden" id="tModalId">
+    <div class="form-grid">
+      <div class="form-group">
+        <label>Status</label>
+        <select class="form-control" id="tStatus">
+          <option value="open">Available</option>
+          <option value="busy">Occupied</option>
+          <option value="reserved">Reserved</option>
+          <option value="cleaning">Cleaning</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Guests</label>
+        <input class="form-control" type="number" id="tGuests" min="0" placeholder="No. of guests">
+      </div>
+      <div class="form-group full">
+        <label>Customer Name</label>
+        <input class="form-control" id="tCustomer" placeholder="Guest name (optional)">
+      </div>
+      <div class="form-group">
+        <label>Seated At</label>
+        <input class="form-control" type="time" id="tTime">
+      </div>
+      <div class="form-group">
+        <label>Waiter</label>
+        <select class="form-control" id="tWaiter">
+          <option value="">— Assign —</option>
+          <option>Ravi Kumar</option>
+          <option>Anita Sharma</option>
+          <option>Deepak Joshi</option>
+          <option>Meena Pillai</option>
+        </select>
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeTableModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveTableUpdate()">Save Changes</button>
+    </div>
+  </div>
+</div>
+
+<!-- Reservation Modal -->
+<div class="modal-overlay" id="reserveModal">
+  <div class="modal">
+    <div class="modal-title">New Reservation</div>
+    <div class="modal-subtitle">Book a table for a future guest</div>
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Guest Name</label>
+        <input class="form-control" id="rName" placeholder="e.g. Arjun Mehta">
+      </div>
+      <div class="form-group">
+        <label>Table</label>
+        <select class="form-control" id="rTable"></select>
+      </div>
+      <div class="form-group">
+        <label>Guests</label>
+        <input class="form-control" type="number" id="rGuests" min="1" max="12" placeholder="2">
+      </div>
+      <div class="form-group">
+        <label>Time</label>
+        <input class="form-control" type="time" id="rTime">
+      </div>
+      <div class="form-group">
+        <label>Phone</label>
+        <input class="form-control" id="rPhone" placeholder="+91…">
+      </div>
+    </div>
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeReserveModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveReservation()">📅 Confirm Booking</button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none;">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <div><div class="toast-msg" id="toastMsg"></div><div class="toast-sub" id="toastSub"></div></div>
+</div>
+
+<script>
+let tables = [
+  // Main Hall
+  {id:'T-01', section:'mainHall',   cap:4,  status:'busy',     guests:4, customer:'Arjun Mehta',  since:'7:32 PM', waiter:'Ravi Kumar'},
+  {id:'T-02', section:'mainHall',   cap:2,  status:'open',     guests:0, customer:'',             since:'—',       waiter:''},
+  {id:'T-03', section:'mainHall',   cap:6,  status:'reserved', guests:0, customer:'Priya Nair',   since:'8:00 PM', waiter:''},
+  {id:'T-04', section:'mainHall',   cap:4,  status:'busy',     guests:6, customer:'Rahul Das',    since:'7:10 PM', waiter:'Anita Sharma'},
+  {id:'T-05', section:'mainHall',   cap:8,  status:'open',     guests:0, customer:'',             since:'—',       waiter:''},
+  {id:'T-06', section:'mainHall',   cap:2,  status:'cleaning', guests:0, customer:'',             since:'—',       waiter:''},
+  {id:'T-07', section:'mainHall',   cap:4,  status:'busy',     guests:3, customer:'Sneha Roy',    since:'8:05 PM', waiter:'Deepak Joshi'},
+  {id:'T-08', section:'mainHall',   cap:6,  status:'open',     guests:0, customer:'',             since:'—',       waiter:''},
+  // Terrace
+  {id:'T-09', section:'terrace',    cap:4,  status:'busy',     guests:4, customer:'Kiran Iyer',   since:'7:30 PM', waiter:'Meena Pillai'},
+  {id:'T-10', section:'terrace',    cap:2,  status:'open',     guests:0, customer:'',             since:'—',       waiter:''},
+  {id:'T-11', section:'terrace',    cap:4,  status:'reserved', guests:0, customer:'Dev Kapoor',   since:'9:00 PM', waiter:''},
+  {id:'T-12', section:'terrace',    cap:6,  status:'open',     guests:0, customer:'',             since:'—',       waiter:''},
+  // Private Room
+  {id:'T-13', section:'privateRoom',cap:10, status:'busy',     guests:8, customer:'Corporate Evt',since:'6:00 PM', waiter:'Ravi Kumar'},
+  {id:'T-14', section:'privateRoom',cap:8,  status:'open',     guests:0, customer:'',             since:'—',       waiter:''},
+];
+
+let reservations = [
+  {name:'Dev Kapoor',   table:'T-11', guests:4, time:'9:00 PM', phone:'+91 98765 43210'},
+  {name:'Leena Shah',   table:'T-03', guests:2, time:'8:30 PM', phone:'+91 87654 32109'},
+  {name:'Vikram Nair',  table:'T-05', guests:6, time:'9:30 PM', phone:'+91 76543 21098'},
+];
+
+let selectedTable = null;
+
+const statusIcons = {open:'🟢', busy:'🔴', reserved:'🟡', cleaning:'🔵'};
+const statusLabels = {open:'Available', busy:'Occupied', reserved:'Reserved', cleaning:'Cleaning'};
+
+function renderFloor() {
+  ['mainHall','terrace','privateRoom'].forEach(sec => {
+    const el = document.getElementById(sec);
+    const secTables = tables.filter(t => t.section === sec);
+    el.innerHTML = secTables.map((t, i) => `
+      <div class="table-card ${t.status} ${selectedTable === t.id ? 'selected' : ''}"
+           style="animation-delay:${i*0.07}s"
+           onclick="selectTable('${t.id}')">
+        ${t.since !== '—' ? `<div class="timer-badge">${t.since}</div>` : ''}
+        <span class="table-icon">${statusIcons[t.status]}</span>
+        <div class="table-id">${t.id}</div>
+        <div class="table-capacity">Seats ${t.cap}</div>
+        <span class="table-status-badge">${statusLabels[t.status]}</span>
+        ${t.guests > 0 ? `<div class="table-guests">${t.guests} guests${t.customer ? ' · '+t.customer : ''}</div>` : ''}
+      </div>
+    `).join('');
+  });
+
+  // Stats
+  document.getElementById('openCount').textContent = tables.filter(t=>t.status==='open').length;
+  document.getElementById('busyCount').textContent = tables.filter(t=>t.status==='busy').length;
+  document.getElementById('resCount').textContent = tables.filter(t=>t.status==='reserved').length;
+  document.getElementById('guestCount').textContent = tables.reduce((s,t)=>s+t.guests, 0);
+}
+
+function selectTable(id) {
+  selectedTable = id;
+  renderFloor();
+  renderDetail();
+}
+
+function renderDetail() {
+  const t = tables.find(t => t.id === selectedTable);
+  const panel = document.getElementById('detailPanel');
+  if (!t) {
+    panel.innerHTML = `<div class="detail-empty"><div class="de-icon">🪑</div><p style="font-size:14px;color:var(--text-secondary);">Select a table to manage it</p></div>`;
+    return;
+  }
+  panel.innerHTML = `
+    <div class="card-header" style="margin-bottom:20px;">
+      <div>
+        <div class="card-title">${t.id} <span class="badge ${t.status==='open'?'badge-success':t.status==='busy'?'badge-danger':t.status==='reserved'?'badge-warning':'badge-info'}">${statusLabels[t.status]}</span></div>
+        <div class="card-subtitle">Capacity: ${t.cap} guests</div>
+      </div>
+      <span style="font-size:32px;">${statusIcons[t.status]}</span>
+    </div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Current Info</div>
+      <div style="display:flex;flex-direction:column;gap:8px;">
+        <div style="display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:var(--text-muted);">Guests</span>
+          <span style="color:var(--text-primary);font-weight:600;">${t.guests || '—'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:var(--text-muted);">Customer</span>
+          <span style="color:var(--text-primary);font-weight:600;">${t.customer || '—'}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:var(--text-muted);">Seated at</span>
+          <span style="color:var(--text-primary);font-weight:600;">${t.since}</span>
+        </div>
+        <div style="display:flex;justify-content:space-between;font-size:13px;">
+          <span style="color:var(--text-muted);">Waiter</span>
+          <span style="color:var(--text-primary);font-weight:600;">${t.waiter || '—'}</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <div class="detail-section">
+      <div class="detail-section-title">Actions</div>
+      <div class="action-btns">
+        <button class="btn btn-primary btn-sm" onclick="openTableModal('${t.id}')">✏️ Edit</button>
+        <button class="btn btn-outline btn-sm" onclick="setStatus('${t.id}','open')">✅ Free Up</button>
+        <button class="btn btn-outline btn-sm" onclick="setStatus('${t.id}','cleaning')">🧹 Cleaning</button>
+        <button class="btn btn-danger btn-sm" onclick="setStatus('${t.id}','busy')">🔴 Mark Busy</button>
+      </div>
+    </div>
+  `;
+}
+
+function setStatus(id, status) {
+  const t = tables.find(t => t.id === id);
+  if (!t) return;
+  t.status = status;
+  if (status === 'open' || status === 'cleaning') { t.guests = 0; t.customer = ''; t.since = '—'; t.waiter = ''; }
+  renderFloor();
+  renderDetail();
+  showToast('Table updated', t.id + ' → ' + statusLabels[status], statusIcons[status]);
+}
+
+function openTableModal(id) {
+  const t = tables.find(t => t.id === id);
+  document.getElementById('tModalId').value = id;
+  document.getElementById('tableModalTitle').textContent = 'Update ' + id;
+  document.getElementById('tableModalSub').textContent = 'Change status or guest info';
+  document.getElementById('tStatus').value = t.status;
+  document.getElementById('tGuests').value = t.guests || '';
+  document.getElementById('tCustomer').value = t.customer || '';
+  document.getElementById('tTime').value = '';
+  document.getElementById('tWaiter').value = t.waiter || '';
+  document.getElementById('tableModal').classList.add('open');
+}
+function closeTableModal() { document.getElementById('tableModal').classList.remove('open'); }
+
+function saveTableUpdate() {
+  const id = document.getElementById('tModalId').value;
+  const t = tables.find(t => t.id === id);
+  t.status   = document.getElementById('tStatus').value;
+  t.guests   = parseInt(document.getElementById('tGuests').value) || 0;
+  t.customer = document.getElementById('tCustomer').value;
+  const tTime = document.getElementById('tTime').value;
+  t.since    = tTime ? formatTime(tTime) : t.since;
+  t.waiter   = document.getElementById('tWaiter').value;
+  closeTableModal();
+  renderFloor();
+  renderDetail();
+  showToast('Table saved', id + ' has been updated.', '✅');
+}
+
+function formatTime(t) {
+  const [h,m] = t.split(':');
+  const hr = parseInt(h); const ampm = hr >= 12 ? 'PM' : 'AM';
+  return `${hr > 12 ? hr-12 : hr || 12}:${m} ${ampm}`;
+}
+
+function openReserveModal() {
+  const sel = document.getElementById('rTable');
+  sel.innerHTML = tables.map(t => `<option value="${t.id}">${t.id} (${t.cap} seats)</option>`).join('');
+  document.getElementById('reserveModal').classList.add('open');
+}
+function closeReserveModal() { document.getElementById('reserveModal').classList.remove('open'); }
+
+function saveReservation() {
+  const name = document.getElementById('rName').value.trim();
+  const table = document.getElementById('rTable').value;
+  const guests = document.getElementById('rGuests').value;
+  const time = document.getElementById('rTime').value;
+  const phone = document.getElementById('rPhone').value;
+  if (!name || !time) { showToast('Missing info', 'Name and time are required.', '⚠️'); return; }
+  reservations.push({name, table, guests: parseInt(guests)||2, time: formatTime(time), phone});
+  // Mark table reserved
+  const t = tables.find(t => t.id === table);
+  if (t && t.status === 'open') { t.status = 'reserved'; t.customer = name; }
+  renderReservations();
+  renderFloor();
+  closeReserveModal();
+  showToast('Reservation added', name + ' @ ' + formatTime(time), '📅');
+}
+
+function renderReservations() {
+  const el = document.getElementById('reservationList');
+  if (reservations.length === 0) {
+    el.innerHTML = `<p style="font-size:13px;color:var(--text-muted);text-align:center;padding:16px;">No reservations today.</p>`;
+    return;
+  }
+  el.innerHTML = reservations.map((r, i) => `
+    <div class="reservation-row">
+      <div>
+        <div style="font-size:13px;font-weight:600;color:var(--text-primary);">${r.name}</div>
+        <div style="font-size:11px;color:var(--text-muted);">${r.table} · ${r.guests} guests</div>
+      </div>
+      <div style="text-align:right;">
+        <div class="reservation-time">${r.time}</div>
+        <button style="font-size:10px;background:none;border:none;color:var(--danger);cursor:pointer;padding:2px;" onclick="removeReservation(${i})">Remove</button>
+      </div>
+    </div>
+  `).join('');
+}
+
+function removeReservation(i) {
+  reservations.splice(i, 1);
+  renderReservations();
+  showToast('Reservation removed', 'Booking cancelled.', '🗑️');
+}
+
+function showToast(msg, sub, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastSub').textContent = sub;
+  document.getElementById('toastIcon').textContent = icon;
+  t.style.display = 'flex'; t.classList.remove('hide');
+  setTimeout(() => { t.classList.add('hide'); setTimeout(()=>{ t.style.display='none'; t.classList.remove('hide'); }, 300); }, 3500);
+}
+
+document.getElementById('tableModal').addEventListener('click', e => { if(e.target===document.getElementById('tableModal')) closeTableModal(); });
+document.getElementById('reserveModal').addEventListener('click', e => { if(e.target===document.getElementById('reserveModal')) closeReserveModal(); });
+
+renderFloor();
+renderReservations();
+</script>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Feedback</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .feedback-layout { display:grid; grid-template-columns:360px 1fr; gap:28px; align-items:start; }
+    .form-sticky { position:sticky; top:32px; }
+
+    .fb-card { background:var(--bg-surface); border:1px solid var(--border); border-radius:var(--radius-md); padding:20px; transition:var(--transition); animation:fadeInUp .4s ease both; }
+    .fb-card:hover { border-color:var(--border-glow); }
+    .fb-header { display:flex; align-items:center; gap:14px; margin-bottom:12px; }
+    .fb-meta   { flex:1; min-width:0; }
+    .fb-name   { font-size:14px; font-weight:600; color:var(--text-primary); }
+    .fb-id     { font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .fb-comment{ font-size:13px; color:var(--text-secondary); line-height:1.6; font-style:italic; margin-top:4px; }
+    .fb-list   { display:flex; flex-direction:column; gap:14px; }
+
+    /* Star rating input */
+    .star-input { display:flex; gap:6px; margin-top:8px; }
+    .star-input span { font-size:30px; cursor:pointer; color:var(--border); transition:color .15s; line-height:1; user-select:none; }
+    .star-input span.active { color:var(--warning); }
+
+    /* Rating breakdown bars */
+    .rating-bar { display:flex; align-items:center; gap:12px; margin-bottom:10px; }
+    .rating-bar-label { font-size:12px; color:var(--text-secondary); width:44px; text-align:right; flex-shrink:0; }
+    .rating-bar-track { flex:1; height:6px; background:var(--border); border-radius:99px; overflow:hidden; }
+    .rating-bar-fill  { height:100%; background:linear-gradient(90deg,var(--warning),var(--gold-light)); border-radius:99px; transition:width 1s ease; width:0; }
+    .rating-bar-count { font-size:11px; color:var(--text-muted); width:24px; }
+
+    .error-banner   { display:none; background:rgba(224,92,92,.12); border:1px solid rgba(224,92,92,.3); border-radius:var(--radius-md); padding:13px 16px; margin-bottom:16px; font-size:13px; color:var(--danger); }
+    .error-banner.show   { display:flex; align-items:center; gap:10px; animation:fadeIn .3s ease; }
+    .success-banner { display:none; background:rgba(76,175,130,.12); border:1px solid rgba(76,175,130,.3); border-radius:var(--radius-md); padding:13px 16px; margin-bottom:16px; font-size:13px; color:var(--success); }
+    .success-banner.show { display:flex; align-items:center; gap:10px; animation:fadeIn .3s ease; }
+
+    /* Big rating display */
+    .avg-rating-display {
+      text-align:center; padding:24px;
+      background:var(--gold-dim); border:1px solid rgba(196,155,76,.2);
+      border-radius:var(--radius-md); margin-bottom:24px;
+    }
+    .avg-number { font-family:'Cormorant Garamond',serif; font-size:56px; font-weight:700; color:var(--gold-light); line-height:1; }
+    .avg-stars  { font-size:22px; color:var(--warning); letter-spacing:3px; margin:6px 0 4px; }
+    .avg-label  { font-size:12px; color:var(--text-muted); }
+
+    @media(max-width:960px){.feedback-layout{grid-template-columns:1fr;} .form-sticky{position:static;}}
+  </style>
+</head>
+<body>
+
+<!-- ═══ Sidebar ═══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span>
+    <h1>Saveur</h1>
+    <span>Restaurant Suite</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html"    class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+    <a href="order.html"    class="nav-link"><span class="nav-icon">📋</span><span>Orders</span></a>
+    <a href="menu.html"     class="nav-link"><span class="nav-icon">🧾</span><span>Menu</span></a>
+    <a href="tables.html"   class="nav-link"><span class="nav-icon">🪑</span><span>Tables</span></a>
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link"><span class="nav-icon">👤</span><span>Customers</span></a>
+    <a href="staff.html"    class="nav-link"><span class="nav-icon">👨‍🍳</span><span>Staff</span></a>
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html"  class="nav-link"><span class="nav-icon">📈</span><span>Reports</span></a>
+    <a href="feedback.html" class="nav-link active"><span class="nav-icon">⭐</span><span>Feedback</span></a>
+    <a href="settings.html" class="nav-link"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+  </nav>
+  <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ Main ═══════════════════════════════════════════════════════════ -->
+<main class="main">
+  <div class="page-header">
+    <div class="breadcrumb">Finance → Feedback</div>
+    <h2>Guest Feedback ⭐</h2>
+    <p>View ratings and submit customer reviews.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:32px;">
+    <div class="stat-card"><span class="stat-icon">⭐</span><div class="stat-label">Avg Rating</div><div class="stat-value" id="statAvg">—</div><div class="stat-change">Overall score</div></div>
+    <div class="stat-card"><span class="stat-icon">💬</span><div class="stat-label">Total Reviews</div><div class="stat-value" id="statCount">—</div><div class="stat-change">From guests</div></div>
+    <div class="stat-card"><span class="stat-icon">🏆</span><div class="stat-label">5-Star Reviews</div><div class="stat-value" id="stat5">—</div><div class="stat-change">Perfect ratings</div></div>
+    <div class="stat-card"><span class="stat-icon">😊</span><div class="stat-label">Satisfaction</div><div class="stat-value" id="statSat">—</div><div class="stat-change">Rating ≥ 4 stars</div></div>
+  </div>
+
+  <div class="feedback-layout">
+
+    <!-- ── Left: Submit Form + Breakdown ── -->
+    <div class="form-sticky">
+
+      <!-- Submit Feedback -->
+      <div class="card">
+        <div style="margin-bottom:24px;">
+          <div class="card-title">Submit Feedback</div>
+          <div class="card-subtitle">Record a guest review</div>
+        </div>
+
+        <div class="success-banner" id="sucBanner"><span>✅</span><span id="sucMsg">Feedback submitted!</span></div>
+        <div class="error-banner"   id="errBanner"><span>⚠️</span><span id="errMsg">Error</span></div>
+
+        <form id="fbForm" onsubmit="handleSubmit(event)" novalidate>
+          <div style="display:flex;flex-direction:column;gap:16px;">
+
+            <div class="form-group">
+              <label>Feedback ID *</label>
+              <input class="form-control" type="text" id="feedback_id" placeholder="e.g. FB-001" required />
+            </div>
+
+            <div class="form-group">
+              <label>Customer ID *</label>
+              <input class="form-control" type="text" id="fb_cust_id" list="custDL" placeholder="e.g. CUST-001" required />
+              <datalist id="custDL"></datalist>
+            </div>
+
+            <div class="form-group">
+              <label>Star Rating *</label>
+              <div class="star-input" id="starInput">
+                <span data-v="1">★</span>
+                <span data-v="2">★</span>
+                <span data-v="3">★</span>
+                <span data-v="4">★</span>
+                <span data-v="5">★</span>
+              </div>
+              <div style="font-size:11px;color:var(--text-muted);margin-top:6px;" id="starLabel">Click to rate</div>
+              <input type="hidden" id="ratingVal" />
+            </div>
+
+            <div class="form-group">
+              <label>Comments</label>
+              <textarea class="form-control" id="comments" rows="3" placeholder="Share the guest's experience…" style="resize:vertical;"></textarea>
+            </div>
+
+          </div>
+
+          <div style="margin-top:20px;">
+            <button type="submit" class="btn btn-primary" style="width:100%;" id="submitBtn">
+              ⭐ Submit Feedback
+            </button>
+          </div>
+        </form>
+      </div>
+
+      <!-- Rating Breakdown -->
+      <div class="card" style="margin-top:20px;">
+        <div style="margin-bottom:20px;">
+          <div class="card-title">Rating Breakdown</div>
+        </div>
+
+        <!-- Big average display -->
+        <div class="avg-rating-display">
+          <div class="avg-number" id="avgBig">—</div>
+          <div class="avg-stars"  id="avgStars">☆☆☆☆☆</div>
+          <div class="avg-label">out of 5 stars</div>
+        </div>
+
+        <div id="ratingBars"><p style="color:var(--text-muted);font-size:13px;">Loading…</p></div>
+      </div>
+    </div>
+
+    <!-- ── Right: Reviews List ── -->
+    <div>
+      <div class="card-header" style="margin-bottom:20px;">
+        <div>
+          <div class="card-title" style="font-family:'Cormorant Garamond',serif;font-size:22px;">All Reviews</div>
+          <div class="card-subtitle" id="fbCountLabel">Loading…</div>
+        </div>
+        <div style="display:flex;gap:10px;align-items:center;flex-wrap:wrap;">
+          <select class="form-control" style="width:auto;" id="ratingFilter" onchange="filterFeedback()">
+            <option value="">All Ratings</option>
+            <option value="5">★★★★★ 5 Stars</option>
+            <option value="4">★★★★☆ 4 Stars</option>
+            <option value="3">★★★☆☆ 3 Stars</option>
+            <option value="2">★★☆☆☆ 2 Stars</option>
+            <option value="1">★☆☆☆☆ 1 Star</option>
+          </select>
+          <button class="btn btn-outline btn-sm" onclick="loadFeedback()">↻ Refresh</button>
+        </div>
+      </div>
+
+      <div class="fb-list" id="fbList">
+        <p style="color:var(--text-muted);font-size:13px;padding:20px;">Loading feedback…</p>
+      </div>
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none;">
+  <span class="toast-icon" id="toastIcon">⭐</span>
+  <div><div class="toast-msg" id="toastMsg"></div><div class="toast-sub" id="toastSub"></div></div>
+</div>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+
+<script>
+const API = '/api';
+let allFeedback   = [];
+let selectedRating = 0;
+const starLabels = ['','⭐ Poor','⭐⭐ Fair','⭐⭐⭐ Good','⭐⭐⭐⭐ Very Good','⭐⭐⭐⭐⭐ Excellent'];
+
+/* ── Star Input ─────────────────────────────────────────────────────── */
+const stars = document.querySelectorAll('#starInput span');
+stars.forEach(star => {
+  star.addEventListener('click', () => {
+    selectedRating = parseInt(star.dataset.v);
+    document.getElementById('ratingVal').value = selectedRating;
+    document.getElementById('starLabel').textContent = starLabels[selectedRating];
+    highlightStars(selectedRating);
+  });
+  star.addEventListener('mouseover', () => highlightStars(parseInt(star.dataset.v)));
+  star.addEventListener('mouseout',  () => highlightStars(selectedRating));
+});
+function highlightStars(n) {
+  stars.forEach(s => s.classList.toggle('active', parseInt(s.dataset.v) <= n));
+}
+
+/* ── Load feedback ──────────────────────────────────────────────────── */
+async function loadFeedback() {
+  try {
+    allFeedback = await fetch(`${API}/feedback`).then(r => r.json());
+    updateStats();
+    renderBreakdown();
+    renderFeedback(allFeedback);
+  } catch(e) {
+    document.getElementById('fbList').innerHTML =
+      '<p style="color:var(--danger);font-size:13px;">Failed to load feedback. Is the server running?</p>';
+  }
+}
+
+function updateStats() {
+  const count = allFeedback.length;
+  const avg   = count ? (allFeedback.reduce((s,f) => s + (f.rating||0), 0) / count) : 0;
+  const five  = allFeedback.filter(f => f.rating === 5).length;
+  const sat   = count ? Math.round(allFeedback.filter(f => f.rating >= 4).length / count * 100) : 0;
+
+  document.getElementById('statAvg').textContent  = avg.toFixed(1) + ' ★';
+  document.getElementById('statCount').textContent = count;
+  document.getElementById('stat5').textContent     = five;
+  document.getElementById('statSat').textContent   = sat + '%';
+
+  // Big avg display
+  document.getElementById('avgBig').textContent = count ? avg.toFixed(1) : '—';
+  const fullStars = Math.round(avg);
+  document.getElementById('avgStars').textContent = '★'.repeat(fullStars) + '☆'.repeat(5 - fullStars);
+}
+
+function renderBreakdown() {
+  const bars = document.getElementById('ratingBars');
+  bars.innerHTML = '';
+  const total = allFeedback.length || 1;
+  for (let r = 5; r >= 1; r--) {
+    const cnt = allFeedback.filter(f => f.rating === r).length;
+    const pct = (cnt / total * 100).toFixed(1);
+    bars.innerHTML += `
+      <div class="rating-bar">
+        <span class="rating-bar-label">${r} ★</span>
+        <div class="rating-bar-track">
+          <div class="rating-bar-fill" data-w="${pct}%"></div>
+        </div>
+        <span class="rating-bar-count">${cnt}</span>
+      </div>`;
+  }
+  setTimeout(() => {
+    document.querySelectorAll('.rating-bar-fill').forEach(el => { el.style.width = el.dataset.w; });
+  }, 200);
+}
+
+function renderFeedback(list) {
+  const container = document.getElementById('fbList');
+  document.getElementById('fbCountLabel').textContent = `${list.length} reviews`;
+  if (!list.length) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;padding:20px 0;">No reviews found.</p>';
+    return;
+  }
+  container.innerHTML = '';
+  list.forEach((f, i) => {
+    const full = '★'.repeat(f.rating) + '☆'.repeat(5 - f.rating);
+    const col  = f.rating >= 4 ? 'var(--success)' : f.rating === 3 ? 'var(--warning)' : 'var(--danger)';
+    const div  = document.createElement('div');
+    div.className = 'fb-card';
+    div.style.animationDelay = (i * 0.05) + 's';
+    div.innerHTML = `
+      <div class="fb-header">
+        <div class="avatar" style="width:42px;height:42px;font-size:16px;">
+          ${(f.customer_name || f.customer_id || '?')[0].toUpperCase()}
+        </div>
+        <div class="fb-meta">
+          <div class="fb-name">${f.customer_name || f.customer_id}</div>
+          <div class="fb-id">${f.feedback_id} · ${f.customer_id}</div>
+        </div>
+        <div style="font-size:20px;letter-spacing:1px;color:var(--warning);">${full}</div>
+      </div>
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px;">
+        <span style="font-size:11px;font-weight:700;padding:3px 10px;border-radius:99px;background:${col}22;color:${col};">
+          ${starLabels[f.rating] || f.rating + ' stars'}
+        </span>
+      </div>
+      ${f.comments
+        ? `<div class="fb-comment">"${f.comments}"</div>`
+        : `<div class="fb-comment" style="opacity:.4;">No comment provided.</div>`}`;
+    container.appendChild(div);
+  });
+}
+
+function filterFeedback() {
+  const r = parseInt(document.getElementById('ratingFilter').value) || null;
+  renderFeedback(r ? allFeedback.filter(f => f.rating === r) : allFeedback);
+}
+
+/* ── Submit ─────────────────────────────────────────────────────────── */
+async function handleSubmit(e) {
+  e.preventDefault();
+  document.getElementById('errBanner').classList.remove('show');
+  document.getElementById('sucBanner').classList.remove('show');
+
+  const feedback_id  = document.getElementById('feedback_id').value.trim();
+  const customer_id  = document.getElementById('fb_cust_id').value.trim();
+  const comments     = document.getElementById('comments').value.trim();
+
+  if (!feedback_id)   { showErr('Please enter a Feedback ID.'); return; }
+  if (!customer_id)   { showErr('Please enter a Customer ID.'); return; }
+  if (!selectedRating){ showErr('Please select a star rating.'); return; }
+
+  const btn = document.getElementById('submitBtn');
+  btn.disabled = true; btn.textContent = 'Submitting…';
+
+  try {
+    const res  = await fetch(`${API}/feedback`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ feedback_id, customer_id, rating: selectedRating, comments }),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Failed');
+
+    document.getElementById('sucMsg').textContent = `Feedback "${feedback_id}" submitted successfully!`;
+    document.getElementById('sucBanner').classList.add('show');
+    setTimeout(() => document.getElementById('sucBanner').classList.remove('show'), 4000);
+    showToast('⭐', 'Feedback submitted!', `Rating: ${selectedRating} ★`);
+    e.target.reset();
+    selectedRating = 0; highlightStars(0);
+    document.getElementById('starLabel').textContent = 'Click to rate';
+    loadFeedback();
+  } catch(err) {
+    showErr(err.message);
+  } finally {
+    btn.disabled = false; btn.textContent = '⭐ Submit Feedback';
+  }
+}
+
+function showErr(msg) {
+  document.getElementById('errMsg').textContent = msg;
+  document.getElementById('errBanner').classList.add('show');
+}
+
+function showToast(icon, msg, sub) {
+  const t = document.getElementById('toast');
+  document.getElementById('toastIcon').textContent = icon;
+  document.getElementById('toastMsg').textContent  = msg;
+  document.getElementById('toastSub').textContent  = sub;
+  t.style.display = 'flex'; t.classList.remove('hide');
+  setTimeout(() => {
+    t.classList.add('hide');
+    setTimeout(() => { t.style.display = 'none'; t.classList.remove('hide'); }, 300);
+  }, 3500);
+}
+
+/* ── Load customers for datalist ───────────────────────────────────── */
+fetch(`${API}/customers`).then(r => r.json()).then(list => {
+  const dl = document.getElementById('custDL');
+  list.forEach(c => {
+    const o = document.createElement('option');
+    o.value = c.customer_id;
+    o.label = c.name;
+    dl.appendChild(o);
+  });
+}).catch(() => {});
+
+/* Auto-generate feedback ID */
+document.getElementById('feedback_id').value = 'FB-' + Date.now().toString().slice(-6);
+
+loadFeedback();
+</script>
+</body>
+</html>

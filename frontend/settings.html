@@ -1,0 +1,578 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Settings</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .settings-layout { display:grid; grid-template-columns:240px 1fr; gap:28px; align-items:start; }
+    .settings-nav {
+      background:var(--bg-card); border:1px solid var(--border);
+      border-radius:var(--radius-lg); padding:16px; position:sticky; top:32px;
+    }
+    .snav-item {
+      display:flex; align-items:center; gap:12px; padding:11px 14px;
+      border-radius:var(--radius-sm); cursor:pointer; transition:var(--transition);
+      color:var(--text-secondary); font-size:14px; font-weight:500;
+      border:none; background:none; width:100%; text-align:left;
+    }
+    .snav-item:hover { background:var(--bg-hover); color:var(--text-primary); }
+    .snav-item.active { background:var(--gold-dim); color:var(--gold-light); border-left:2px solid var(--gold); }
+    .snav-item span:first-child { font-size:17px; width:20px; text-align:center; }
+
+    .settings-section { display:none; }
+    .settings-section.active { display:block; animation:fadeInUp 0.4s ease both; }
+
+    .setting-row {
+      display:flex; align-items:center; justify-content:space-between;
+      padding:16px 0; border-bottom:1px solid var(--border);
+    }
+    .setting-row:last-child { border-bottom:none; }
+    .setting-info { flex:1; }
+    .setting-label { font-size:14px; font-weight:600; color:var(--text-primary); margin-bottom:3px; }
+    .setting-desc { font-size:12px; color:var(--text-muted); }
+    .setting-ctrl { flex-shrink:0; margin-left:24px; }
+
+    /* Toggle switch */
+    .toggle-wrap { position:relative; width:44px; height:24px; cursor:pointer; }
+    .toggle-wrap input { opacity:0; width:0; height:0; }
+    .toggle-track {
+      position:absolute; inset:0; border-radius:99px;
+      background:var(--border); transition:0.3s;
+    }
+    .toggle-wrap input:checked + .toggle-track { background:var(--gold); }
+    .toggle-thumb {
+      position:absolute; top:3px; left:3px; width:18px; height:18px;
+      border-radius:50%; background:#fff; transition:0.3s;
+      pointer-events:none;
+    }
+    .toggle-wrap input:checked ~ .toggle-thumb { transform:translateX(20px); }
+
+    .section-title {
+      font-family:'Cormorant Garamond',serif; font-size:22px; font-weight:600;
+      color:var(--text-primary); margin-bottom:4px;
+    }
+    .section-desc { font-size:13px; color:var(--text-muted); margin-bottom:24px; }
+
+    .color-swatch-row { display:flex; gap:10px; margin-top:8px; }
+    .color-swatch {
+      width:32px; height:32px; border-radius:8px; cursor:pointer;
+      border:2px solid transparent; transition:var(--transition);
+    }
+    .color-swatch:hover { transform:scale(1.1); }
+    .color-swatch.selected { border-color:var(--text-primary); }
+
+    .danger-zone { border:1px solid rgba(224,92,92,0.3); border-radius:var(--radius-md); padding:20px; }
+    .danger-zone .section-title { color:var(--danger); font-size:16px; }
+
+    .printer-preview {
+      background:var(--bg-surface); border:1px solid var(--border);
+      border-radius:var(--radius-md); padding:20px; font-size:12px;
+      color:var(--text-secondary); line-height:1.8; font-family:monospace;
+      margin-top:16px;
+    }
+    .profile-avatar-lg {
+      width:72px; height:72px; border-radius:50%; background:var(--gold-dim);
+      display:flex; align-items:center; justify-content:center;
+      font-size:28px; font-weight:700; color:var(--gold-light);
+      border:2px solid var(--border); flex-shrink:0; cursor:pointer;
+    }
+  </style>
+</head>
+<body>
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span><h1>Saveur</h1><span>Restaurant Suite</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+    <a href="order.html" class="nav-link"><span class="nav-icon">📋</span><span>Orders</span><span class="nav-badge">5</span></a>
+    <a href="menu.html" class="nav-link"><span class="nav-icon">🧾</span><span>Menu</span></a>
+    <a href="tables.html" class="nav-link"><span class="nav-icon">🪑</span><span>Tables</span></a>
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link"><span class="nav-icon">👤</span><span>Customers</span></a>
+    <a href="staff.html" class="nav-link"><span class="nav-icon">👨‍🍳</span><span>Staff</span></a>
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html" class="nav-link"><span class="nav-icon">📈</span><span>Reports</span></a>
+    <a href="settings.html" class="nav-link active"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+  </nav>
+    <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<main class="main">
+  <div class="page-header">
+    <div class="breadcrumb">Configuration</div>
+    <h2>Settings ⚙️</h2>
+    <p>Configure your restaurant, billing, notifications and preferences.</p>
+  </div>
+
+  <div class="settings-layout">
+    <!-- Settings Nav -->
+    <div class="settings-nav">
+      <button class="snav-item active" onclick="showSection('restaurant',this)"><span>🏪</span>Restaurant</button>
+      <button class="snav-item" onclick="showSection('billing',this)"><span>🧾</span>Billing & Tax</button>
+      <button class="snav-item" onclick="showSection('notifications',this)"><span>🔔</span>Notifications</button>
+      <button class="snav-item" onclick="showSection('appearance',this)"><span>🎨</span>Appearance</button>
+      <button class="snav-item" onclick="showSection('users',this)"><span>👤</span>Users & Access</button>
+      <button class="snav-item" onclick="showSection('printer',this)"><span>🖨️</span>Printer & KOT</button>
+      <button class="snav-item" onclick="showSection('advanced',this)"><span>🔧</span>Advanced</button>
+    </div>
+
+    <!-- Sections -->
+    <div>
+
+      <!-- RESTAURANT -->
+      <div class="settings-section active card" id="sec-restaurant">
+        <div class="section-title">Restaurant Info</div>
+        <div class="section-desc">Basic information about your restaurant.</div>
+        <div style="display:flex;align-items:center;gap:20px;margin-bottom:28px;">
+          <div class="profile-avatar-lg" onclick="showToast('Upload logo','Select a new logo image.','📷')">🍽️</div>
+          <div>
+            <div style="font-size:14px;font-weight:600;color:var(--text-primary);">Restaurant Logo</div>
+            <div style="font-size:12px;color:var(--text-muted);margin-top:4px;">Click to upload a new logo (PNG, JPG)</div>
+          </div>
+        </div>
+        <div class="form-grid">
+          <div class="form-group full">
+            <label>Restaurant Name</label>
+            <input class="form-control" id="restName" value="Saveur" placeholder="Your restaurant name">
+          </div>
+          <div class="form-group">
+            <label>Phone</label>
+            <input class="form-control" id="restPhone" value="+91 98765 43210" placeholder="Contact number">
+          </div>
+          <div class="form-group">
+            <label>Email</label>
+            <input class="form-control" id="restEmail" value="hello@saveur.in" type="email">
+          </div>
+          <div class="form-group full">
+            <label>Address</label>
+            <textarea class="form-control" id="restAddr" rows="2" style="resize:vertical;">12, Marine Drive, South Mumbai, Maharashtra 400001</textarea>
+          </div>
+          <div class="form-group">
+            <label>GSTIN</label>
+            <input class="form-control" id="restGST" value="27AAAAA0000A1Z5" placeholder="GST number">
+          </div>
+          <div class="form-group">
+            <label>FSSAI No.</label>
+            <input class="form-control" id="restFSSAI" value="10719023001234" placeholder="FSSAI license">
+          </div>
+          <div class="form-group">
+            <label>Opening Time</label>
+            <input class="form-control" type="time" id="openTime" value="11:00">
+          </div>
+          <div class="form-group">
+            <label>Closing Time</label>
+            <input class="form-control" type="time" id="closeTime" value="23:00">
+          </div>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="saveSection('Restaurant info')">💾 Save Changes</button>
+        </div>
+      </div>
+
+      <!-- BILLING -->
+      <div class="settings-section card" id="sec-billing">
+        <div class="section-title">Billing & Tax</div>
+        <div class="section-desc">GST rates, service charge, rounding and payment modes.</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Currency</label>
+            <select class="form-control">
+              <option>INR (₹)</option>
+              <option>USD ($)</option>
+              <option>EUR (€)</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>CGST %</label>
+            <input class="form-control" type="number" value="2.5" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>SGST %</label>
+            <input class="form-control" type="number" value="2.5" step="0.5">
+          </div>
+          <div class="form-group">
+            <label>Service Charge %</label>
+            <input class="form-control" type="number" value="10" step="1">
+          </div>
+        </div>
+        <div style="margin-top:20px;">
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Include GST in menu price</div>
+              <div class="setting-desc">Prices shown to customers include tax</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" id="gstIncluded"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Round off totals</div>
+              <div class="setting-desc">Round bill amount to nearest rupee</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Accept UPI payments</div>
+              <div class="setting-desc">Show UPI QR on billing screen</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="saveSection('Billing settings')">💾 Save Changes</button>
+        </div>
+      </div>
+
+      <!-- NOTIFICATIONS -->
+      <div class="settings-section card" id="sec-notifications">
+        <div class="section-title">Notifications</div>
+        <div class="section-desc">Choose which events trigger alerts.</div>
+        <div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">New order alert</div>
+              <div class="setting-desc">Sound + popup when a new order is placed</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Order ready notification</div>
+              <div class="setting-desc">Alert waiter when kitchen marks order ready</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Table reservation reminder</div>
+              <div class="setting-desc">Notify 30 min before reserved time</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Low stock warning</div>
+              <div class="setting-desc">Alert when a menu item runs low</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Daily revenue report</div>
+              <div class="setting-desc">Email end-of-day summary to owner</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info">
+              <div class="setting-label">Customer feedback alert</div>
+              <div class="setting-desc">Notify on new review or rating below 3★</div>
+            </div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="saveSection('Notification preferences')">💾 Save Changes</button>
+        </div>
+      </div>
+
+      <!-- APPEARANCE -->
+      <div class="settings-section card" id="sec-appearance">
+        <div class="section-title">Appearance</div>
+        <div class="section-desc">Customize the look and feel of your dashboard.</div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Dark Mode</div>
+            <div class="setting-desc">Toggle between dark and light theme</div>
+          </div>
+          <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Accent Color</div>
+            <div class="setting-desc">Primary highlight color for the interface</div>
+            <div class="color-swatch-row">
+              <div class="color-swatch selected" style="background:#c49b4c;" onclick="selectColor(this,'#c49b4c')"></div>
+              <div class="color-swatch" style="background:#4c9bc4;" onclick="selectColor(this,'#4c9bc4')"></div>
+              <div class="color-swatch" style="background:#4caf82;" onclick="selectColor(this,'#4caf82')"></div>
+              <div class="color-swatch" style="background:#c44c82;" onclick="selectColor(this,'#c44c82')"></div>
+              <div class="color-swatch" style="background:#c47a4c;" onclick="selectColor(this,'#c47a4c')"></div>
+            </div>
+          </div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Sidebar Compact Mode</div>
+            <div class="setting-desc">Collapse sidebar to icons only</div>
+          </div>
+          <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info">
+            <div class="setting-label">Animations</div>
+            <div class="setting-desc">Enable page transition animations</div>
+          </div>
+          <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        </div>
+        <div style="margin-top:24px;display:flex;justify-content:flex-end;">
+          <button class="btn btn-primary" onclick="saveSection('Appearance settings')">💾 Apply Theme</button>
+        </div>
+      </div>
+
+      <!-- USERS -->
+      <div class="settings-section card" id="sec-users">
+        <div class="section-title">Users & Access</div>
+        <div class="section-desc">Manage staff logins and role permissions.</div>
+        <div class="table-wrap">
+          <table class="data-table" id="usersTable">
+            <thead><tr><th>Name</th><th>Role</th><th>Email</th><th>Status</th><th>Actions</th></tr></thead>
+            <tbody id="usersTbody"></tbody>
+          </table>
+        </div>
+        <div style="margin-top:20px;">
+          <button class="btn btn-primary" onclick="addUser()">+ Add User</button>
+        </div>
+      </div>
+
+      <!-- PRINTER -->
+      <div class="settings-section card" id="sec-printer">
+        <div class="section-title">Printer & KOT</div>
+        <div class="section-desc">Configure receipt printer and kitchen order ticket settings.</div>
+        <div class="form-grid">
+          <div class="form-group">
+            <label>Printer Type</label>
+            <select class="form-control">
+              <option>Thermal (80mm)</option>
+              <option>Thermal (58mm)</option>
+              <option>Dot Matrix</option>
+              <option>Network Printer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Connection</label>
+            <select class="form-control">
+              <option>USB</option>
+              <option>Network (LAN)</option>
+              <option>Bluetooth</option>
+            </select>
+          </div>
+          <div class="form-group full">
+            <label>Bill Footer Message</label>
+            <input class="form-control" id="billFooter" value="Thank you for dining with us! Visit again 🙏">
+          </div>
+        </div>
+        <div style="margin-top:16px;">
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-label">Auto-print KOT</div><div class="setting-desc">Automatically print kitchen order on submit</div></div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+          <div class="setting-row">
+            <div class="setting-info"><div class="setting-label">Print GST breakdown</div><div class="setting-desc">Show CGST/SGST lines on receipt</div></div>
+            <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+          </div>
+        </div>
+        <div class="printer-preview">
+          ================================<br>
+          &nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;<b>SAVEUR</b><br>
+          &nbsp;&nbsp;12, Marine Drive, Mumbai<br>
+          &nbsp;&nbsp;&nbsp;Ph: +91 98765 43210<br>
+          ================================<br>
+          Bill No: #ORD-1042&nbsp;&nbsp;Table: T-04<br>
+          Date: 11/04/2026&nbsp;&nbsp;&nbsp;8:14 PM<br>
+          --------------------------------<br>
+          Butter Chicken x1&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹520<br>
+          Naan x2&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹160<br>
+          --------------------------------<br>
+          Subtotal:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹680<br>
+          CGST @2.5%:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹17<br>
+          SGST @2.5%:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹17<br>
+          Service @10%:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹68<br>
+          ================================<br>
+          <b>TOTAL:&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;₹782</b><br>
+          ================================<br>
+          Thank you for dining with us! 🙏<br>
+          ================================<br>
+        </div>
+        <div style="margin-top:20px;display:flex;gap:12px;justify-content:flex-end;">
+          <button class="btn btn-outline" onclick="showToast('Test print','Printing test page…','🖨️')">🖨️ Test Print</button>
+          <button class="btn btn-primary" onclick="saveSection('Printer settings')">💾 Save</button>
+        </div>
+      </div>
+
+      <!-- ADVANCED -->
+      <div class="settings-section card" id="sec-advanced">
+        <div class="section-title">Advanced</div>
+        <div class="section-desc">Data management, backup and system options.</div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-label">Auto Backup</div><div class="setting-desc">Backup data every night at 2 AM</div></div>
+          <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-label">Analytics Tracking</div><div class="setting-desc">Send anonymized usage data to improve the app</div></div>
+          <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox"><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        </div>
+        <div class="setting-row">
+          <div class="setting-info"><div class="setting-label">Offline Mode</div><div class="setting-desc">Cache data for use without internet</div></div>
+          <div class="setting-ctrl"><label class="toggle-wrap"><input type="checkbox" checked><div class="toggle-track"></div><div class="toggle-thumb"></div></label></div>
+        </div>
+        <div class="divider"></div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap;margin-bottom:24px;">
+          <button class="btn btn-outline" onclick="showToast('Backup started','Creating data backup…','💾')">💾 Backup Now</button>
+          <button class="btn btn-outline" onclick="showToast('Export ready','CSV exported successfully.','📥')">📥 Export Data (CSV)</button>
+          <button class="btn btn-outline" onclick="showToast('Restore','Select a backup file to restore.','📤')">📤 Restore Backup</button>
+        </div>
+        <div class="danger-zone">
+          <div class="section-title" style="font-size:15px;color:var(--danger);">⚠️ Danger Zone</div>
+          <div style="margin-top:12px;display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:12px;">
+            <div>
+              <div style="font-size:13px;font-weight:600;color:var(--text-primary);">Reset all data</div>
+              <div style="font-size:12px;color:var(--text-muted);">Permanently delete all orders, menu, and customers</div>
+            </div>
+            <button class="btn btn-danger" onclick="confirmReset()">🗑️ Reset Data</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none;">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <div><div class="toast-msg" id="toastMsg"></div><div class="toast-sub" id="toastSub"></div></div>
+</div>
+
+<script>
+function showSection(name, btn) {
+  document.querySelectorAll('.settings-section').forEach(s => s.classList.remove('active'));
+  document.querySelectorAll('.snav-item').forEach(b => b.classList.remove('active'));
+  document.getElementById('sec-' + name).classList.add('active');
+  btn.classList.add('active');
+}
+
+function saveSection(label) {
+  showToast(label + ' saved', 'Changes applied successfully.', '✅');
+}
+
+function selectColor(el, color) {
+  document.querySelectorAll('.color-swatch').forEach(s => s.classList.remove('selected'));
+  el.classList.add('selected');
+  document.documentElement.style.setProperty('--gold', color);
+  showToast('Theme updated', 'Accent color changed.', '🎨');
+}
+
+// Users
+let users = [
+  {name:'Admin Chef',    role:'Owner',   email:'admin@saveur.in',  active:true},
+  {name:'Ravi Kumar',    role:'Waiter',  email:'ravi@saveur.in',   active:true},
+  {name:'Anita Sharma',  role:'Waiter',  email:'anita@saveur.in',  active:true},
+  {name:'Deepak Joshi',  role:'Kitchen', email:'deepak@saveur.in', active:true},
+  {name:'Meena Pillai',  role:'Cashier', email:'meena@saveur.in',  active:false},
+];
+
+function renderUsers() {
+  const roleBadge = {Owner:'badge-gold', Waiter:'badge-info', Kitchen:'badge-warning', Cashier:'badge-success'};
+  document.getElementById('usersTbody').innerHTML = users.map((u,i) => `
+    <tr>
+      <td><div style="display:flex;align-items:center;gap:10px;"><div class="avatar">${u.name[0]}</div>${u.name}</div></td>
+      <td><span class="badge ${roleBadge[u.role]||'badge-info'}">${u.role}</span></td>
+      <td style="color:var(--text-muted);">${u.email}</td>
+      <td><span class="badge ${u.active ? 'badge-success' : 'badge-danger'}">${u.active ? 'Active' : 'Inactive'}</span></td>
+      <td>
+        <div style="display:flex;gap:6px;">
+          <button class="btn btn-outline btn-sm" onclick="toggleUser(${i})">${u.active ? 'Disable' : 'Enable'}</button>
+          <button class="btn btn-danger btn-sm" onclick="removeUser(${i})">Remove</button>
+        </div>
+      </td>
+    </tr>
+  `).join('');
+}
+
+function toggleUser(i) {
+  users[i].active = !users[i].active;
+  renderUsers();
+  showToast('User updated', users[i].name + (users[i].active ? ' enabled.' : ' disabled.'), '👤');
+}
+
+function removeUser(i) {
+  if (!confirm('Remove ' + users[i].name + '?')) return;
+  users.splice(i, 1); renderUsers();
+  showToast('User removed', 'Account deleted.', '🗑️');
+}
+
+function addUser() {
+  const name = prompt('Enter user name:');
+  if (!name) return;
+  users.push({name, role:'Waiter', email: name.toLowerCase().replace(' ','.')+`@saveur.in`, active:true});
+  renderUsers();
+  showToast('User added', name + ' can now log in.', '✅');
+}
+
+function confirmReset() {
+  if (confirm('This will permanently delete all data. Are you sure?\n\nType RESET to confirm.') &&
+      prompt('Type RESET to confirm:') === 'RESET') {
+    showToast('Data reset', 'All records cleared.', '⚠️');
+  }
+}
+
+function showToast(msg, sub, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastSub').textContent = sub;
+  document.getElementById('toastIcon').textContent = icon;
+  t.style.display = 'flex'; t.classList.remove('hide');
+  setTimeout(() => { t.classList.add('hide'); setTimeout(()=>{ t.style.display='none'; t.classList.remove('hide'); }, 300); }, 3500);
+}
+
+renderUsers();
+</script>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

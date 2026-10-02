@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Login</title>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@300;400;600;700&family=DM+Sans:wght@300;400;500;600&display=swap" rel="stylesheet" />
+  <style>
+    :root {
+      --bg-base:#0a0a0c; --bg-surface:#111115; --bg-card:#16161c; --bg-hover:#1e1e26;
+      --border:#2a2a35; --border-glow:rgba(196,155,76,0.35);
+      --gold:#c49b4c; --gold-light:#e8c47a; --gold-dim:rgba(196,155,76,0.12);
+      --text-primary:#f0ede6; --text-secondary:#8a8799; --text-muted:#4a4860;
+      --danger:#e05c5c; --success:#4caf82;
+      --radius-md:12px; --radius-lg:20px;
+      --shadow-card:0 8px 40px rgba(0,0,0,0.6);
+      --shadow-glow:0 0 40px rgba(196,155,76,0.12);
+      --transition:all 0.3s cubic-bezier(0.4,0,0.2,1);
+    }
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+    body{font-family:'DM Sans',sans-serif;background:var(--bg-base);color:var(--text-primary);
+      min-height:100vh;display:flex;align-items:center;justify-content:center;
+      position:relative;overflow:hidden;}
+    body::before{content:'';position:fixed;top:-30%;left:-20%;width:55%;height:55%;
+      background:radial-gradient(ellipse,rgba(196,155,76,0.07) 0%,transparent 70%);pointer-events:none;}
+    body::after{content:'';position:fixed;bottom:-30%;right:-20%;width:55%;height:55%;
+      background:radial-gradient(ellipse,rgba(196,155,76,0.05) 0%,transparent 70%);pointer-events:none;}
+
+    .wrap{width:100%;max-width:440px;padding:24px;position:relative;z-index:1;}
+    .card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--radius-lg);
+      padding:48px 44px 44px;box-shadow:var(--shadow-card),var(--shadow-glow);
+      animation:slideUp .5s cubic-bezier(.4,0,.2,1) both;}
+    @keyframes slideUp{from{opacity:0;transform:translateY(24px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Logo */
+    .logo{text-align:center;margin-bottom:36px;}
+    .logo .icon{font-size:48px;display:block;margin-bottom:12px;
+      filter:drop-shadow(0 0 16px rgba(196,155,76,0.4));}
+    .logo h1{font-family:'Cormorant Garamond',serif;font-size:36px;font-weight:700;
+      background:linear-gradient(135deg,var(--gold-light),var(--gold));
+      -webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;
+      line-height:1;margin-bottom:6px;}
+    .logo p{font-size:12px;color:var(--text-muted);letter-spacing:.12em;text-transform:uppercase;}
+
+    .divider{height:1px;background:linear-gradient(90deg,transparent,var(--border),transparent);margin-bottom:32px;}
+    .heading{font-size:15px;font-weight:600;color:var(--text-primary);margin-bottom:6px;}
+    .sub{font-size:13px;color:var(--text-secondary);margin-bottom:28px;}
+
+    /* Banners */
+    .banner{display:none;border-radius:var(--radius-md);padding:13px 16px;margin-bottom:20px;
+      font-size:13px;align-items:center;gap:10px;}
+    .banner.show{display:flex;animation:fadeIn .3s ease;}
+    .banner.err{background:rgba(224,92,92,.1);border:1px solid rgba(224,92,92,.3);color:var(--danger);}
+    .banner.suc{background:rgba(76,175,130,.1);border:1px solid rgba(76,175,130,.3);color:var(--success);}
+    @keyframes fadeIn{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+
+    /* Inputs */
+    .field{margin-bottom:20px;}
+    .field label{display:block;font-size:12px;font-weight:500;color:var(--text-secondary);
+      letter-spacing:.06em;text-transform:uppercase;margin-bottom:8px;}
+    .input-wrap{position:relative;}
+    .icon-left{position:absolute;left:16px;top:50%;transform:translateY(-50%);
+      font-size:15px;opacity:.5;pointer-events:none;}
+    .field input{width:100%;background:var(--bg-surface);border:1px solid var(--border);
+      border-radius:var(--radius-md);padding:13px 16px 13px 44px;font-family:'DM Sans',sans-serif;
+      font-size:14px;color:var(--text-primary);outline:none;transition:var(--transition);}
+    .field input::placeholder{color:var(--text-muted);}
+    .field input:focus{border-color:var(--gold);box-shadow:0 0 0 3px var(--gold-dim);background:var(--bg-hover);}
+
+    .pwd-eye{position:absolute;right:14px;top:50%;transform:translateY(-50%);
+      background:none;border:none;cursor:pointer;font-size:16px;color:var(--text-muted);
+      padding:4px;line-height:1;transition:color .2s;}
+    .pwd-eye:hover{color:var(--gold);}
+
+    .options{display:flex;align-items:center;justify-content:space-between;margin-bottom:28px;}
+    .remember{display:flex;align-items:center;gap:8px;cursor:pointer;
+      font-size:13px;color:var(--text-secondary);user-select:none;}
+    .remember input{width:15px;height:15px;accent-color:var(--gold);cursor:pointer;}
+    .forgot{font-size:13px;color:var(--gold);text-decoration:none;transition:color .2s;}
+    .forgot:hover{color:var(--gold-light);}
+
+    /* Button */
+    .btn-main{width:100%;padding:14px;background:linear-gradient(135deg,var(--gold),#a07830);
+      border:none;border-radius:var(--radius-md);font-family:'DM Sans',sans-serif;
+      font-size:15px;font-weight:600;color:#0a0a0c;letter-spacing:.04em;cursor:pointer;
+      transition:var(--transition);display:flex;align-items:center;justify-content:center;gap:8px;}
+    .btn-main:hover:not(:disabled){background:linear-gradient(135deg,var(--gold-light),var(--gold));
+      transform:translateY(-1px);box-shadow:0 6px 24px rgba(196,155,76,0.35);}
+    .btn-main:disabled{opacity:.6;cursor:not-allowed;transform:none;}
+    .spinner{display:none;width:16px;height:16px;border:2px solid rgba(10,10,12,.3);
+      border-top-color:#0a0a0c;border-radius:50%;animation:spin .6s linear infinite;}
+    .loading .btn-text{display:none;} .loading .spinner{display:block;}
+    @keyframes spin{to{transform:rotate(360deg)}}
+
+    /* Accounts list (shows registered users) */
+    .accounts-panel{margin-top:20px;padding:16px;background:var(--gold-dim);
+      border:1px solid rgba(196,155,76,.2);border-radius:var(--radius-md);}
+    .accounts-panel h4{font-size:11px;text-transform:uppercase;letter-spacing:2px;
+      color:var(--gold);margin-bottom:12px;font-weight:700;}
+    .account-chip{display:inline-flex;align-items:center;gap:6px;padding:5px 12px;
+      background:var(--bg-card);border:1px solid var(--border);border-radius:99px;
+      font-size:12px;color:var(--text-secondary);cursor:pointer;transition:var(--transition);
+      margin:3px 3px 3px 0;}
+    .account-chip:hover{border-color:var(--gold);color:var(--gold-light);}
+
+    .reg-row{text-align:center;margin-top:24px;padding-top:24px;
+      border-top:1px solid var(--border);font-size:13px;color:var(--text-secondary);}
+    .reg-row a{color:var(--gold);font-weight:600;text-decoration:none;margin-left:5px;}
+    .reg-row a:hover{color:var(--gold-light);}
+
+    .footer{text-align:center;margin-top:18px;font-size:12px;color:var(--text-muted);}
+    .footer span{color:var(--gold);}
+
+    @media(max-width:480px){.card{padding:36px 26px 32px;}}
+  </style>
+</head>
+<body>
+<div class="wrap">
+  <div class="card">
+
+    <div class="logo">
+      <span class="icon">🍽️</span>
+      <h1>Saveur</h1>
+      <p>Restaurant Management Suite</p>
+    </div>
+
+    <div class="divider"></div>
+    <div class="heading">Welcome back</div>
+    <div class="sub">Sign in with your registered account</div>
+
+    <!-- Banners -->
+    <div class="banner suc" id="sucBanner"><span>✅</span><span id="sucMsg">Account created! Please sign in.</span></div>
+    <div class="banner err" id="errBanner"><span>⚠️</span><span id="errMsg">Invalid credentials</span></div>
+
+    <!-- Form -->
+    <div class="field">
+      <label for="username">Username</label>
+      <div class="input-wrap">
+        <span class="icon-left">👤</span>
+        <input type="text" id="username" placeholder="Enter your username" autocomplete="username" />
+      </div>
+    </div>
+
+    <div class="field">
+      <label for="password">Password</label>
+      <div class="input-wrap">
+        <span class="icon-left">🔒</span>
+        <input type="password" id="password" placeholder="Enter your password" autocomplete="current-password" />
+        <button class="pwd-eye" type="button" onclick="togglePwd()">👁️</button>
+      </div>
+    </div>
+
+    <div class="options">
+      <label class="remember">
+        <input type="checkbox" id="rememberMe" checked /> Remember me
+      </label>
+      <a href="#" class="forgot" onclick="forgotPwd()">Forgot password?</a>
+    </div>
+
+    <button class="btn-main" id="loginBtn" onclick="handleLogin()">
+      <span class="btn-text">Sign In</span>
+      <span class="spinner"></span>
+    </button>
+
+    <!-- Registered accounts quick-select (populated dynamically) -->
+    <div class="accounts-panel" id="accountsPanel" style="display:none;">
+      <h4>🔑 Registered Accounts</h4>
+      <div id="accountChips"></div>
+    </div>
+
+    <!-- Create account link -->
+    <div class="reg-row">
+      Don't have an account?
+      <a href="register.html">Create Account →</a>
+    </div>
+  </div>
+  <div class="footer">&copy; 2025 <span>Saveur</span> · Restaurant Management Suite</div>
+</div>
+
+<script>
+// ── If already logged in → dashboard ──────────────────────────────────
+// ── Auto-redirect if VALID & UNEXPIRED token exists ──────────────────
+(function() {
+  const tok = localStorage.getItem('saveur_token') || sessionStorage.getItem('saveur_token');
+  if (!tok) return;
+  try {
+    const payload = JSON.parse(atob(tok));
+    const AGE_LIMIT = 8 * 60 * 60 * 1000; // 8 hours
+    if (payload.ts && (Date.now() - payload.ts) < AGE_LIMIT) {
+      window.location.href = 'index.html';
+    } else {
+      // Token expired — clear it so user must log in again
+      localStorage.removeItem('saveur_token');
+      localStorage.removeItem('saveur_user');
+      sessionStorage.removeItem('saveur_token');
+    }
+  } catch(e) {
+    // Corrupt/old token — clear it
+    localStorage.removeItem('saveur_token');
+    localStorage.removeItem('saveur_user');
+    sessionStorage.removeItem('saveur_token');
+  }
+})();
+
+// ── Handle redirect from register page ────────────────────────────────
+(function() {
+  const params = new URLSearchParams(window.location.search);
+  const regUser = params.get('user');
+  const justReg = params.get('registered');
+
+  if (regUser) {
+    document.getElementById('username').value = regUser;
+    document.getElementById('password').focus();
+  }
+  if (justReg) {
+    document.getElementById('sucBanner').classList.add('show');
+    setTimeout(() => document.getElementById('sucBanner').classList.remove('show'), 5000);
+  }
+})();
+
+// ── Show registered accounts as quick-select chips ───────────────────
+(function showRegisteredAccounts() {
+  const accounts = JSON.parse(localStorage.getItem('saveur_accounts') || '[]');
+  if (!accounts.length) return;
+
+  const panel = document.getElementById('accountsPanel');
+  const chips = document.getElementById('accountChips');
+  panel.style.display = 'block';
+  chips.innerHTML = '';
+
+  accounts.forEach(acc => {
+    const chip = document.createElement('span');
+    chip.className = 'account-chip';
+    chip.innerHTML = `<span>👤</span>${acc.name} <span style="opacity:.5;font-size:10px;">(${acc.username})</span>`;
+    chip.onclick = () => {
+      document.getElementById('username').value = acc.username;
+      document.getElementById('password').focus();
+    };
+    chips.appendChild(chip);
+  });
+})();
+
+// ── Password toggle ───────────────────────────────────────────────────
+function togglePwd() {
+  const inp = document.getElementById('password');
+  const btn = document.querySelector('.pwd-eye');
+  inp.type = inp.type === 'text' ? 'password' : 'text';
+  btn.textContent = inp.type === 'text' ? '🙈' : '👁️';
+}
+
+// ── Forgot password ───────────────────────────────────────────────────
+function forgotPwd() {
+  const username = document.getElementById('username').value.trim();
+  if (!username) { showErr('Enter your username first, then click Forgot Password.'); return; }
+  const accounts = JSON.parse(localStorage.getItem('saveur_accounts') || '[]');
+  const acc = accounts.find(a => a.username.toLowerCase() === username.toLowerCase());
+  if (!acc) { showErr('No account found with that username.'); return; }
+  // Simple hint — in a real app, you'd send email
+  alert(`Password hint for "${acc.name}":\nYour password has ${acc.password.length} characters.\n\nIf you forgot it, please create a new account or contact your admin.`);
+}
+
+// ── Login ─────────────────────────────────────────────────────────────
+function handleLogin() {
+  clearBanners();
+  const username = document.getElementById('username').value.trim();
+  const password = document.getElementById('password').value;
+  const remember = document.getElementById('rememberMe').checked;
+
+  if (!username) { showErr('Please enter your username.'); return; }
+  if (!password) { showErr('Please enter your password.'); return; }
+
+  const btn = document.getElementById('loginBtn');
+  btn.classList.add('loading'); btn.disabled = true;
+
+  // Simulate a brief check (all local — no server needed)
+  setTimeout(() => {
+    const result = authenticate(username, password);
+    if (result.ok) {
+      // Save session token (simple timestamp-based token)
+      const token = btoa(JSON.stringify({ username: result.user.username, name: result.user.name, role: result.user.role, ts: Date.now() }));
+      const storage = remember ? localStorage : sessionStorage;
+      storage.setItem('saveur_token', token);
+      localStorage.setItem('saveur_user', JSON.stringify({ name: result.user.name, role: result.user.role, username: result.user.username }));
+      window.location.href = 'index.html';
+    } else {
+      showErr(result.error);
+      btn.classList.remove('loading'); btn.disabled = false;
+      // Shake the card
+      document.querySelector('.card').style.animation = 'none';
+      document.getElementById('password').value = '';
+      document.getElementById('password').focus();
+    }
+  }, 500);
+}
+
+// ── Authentication logic (100% local — no server needed) ──────────────
+function authenticate(username, password) {
+  const lcu = username.toLowerCase();
+
+  // 1️⃣  Check registered accounts in localStorage
+  const accounts = JSON.parse(localStorage.getItem('saveur_accounts') || '[]');
+  const acc = accounts.find(a => a.username.toLowerCase() === lcu);
+  if (acc) {
+    if (acc.password === password) return { ok: true, user: acc };
+    return { ok: false, error: 'Wrong password. Please try again.' };
+  }
+
+  // 2️⃣  Built-in admin fallback (always available)
+  if (lcu === 'admin' && password === 'saveur123') {
+    return { ok: true, user: { username: 'admin', name: 'Admin', role: 'admin', password: 'saveur123' } };
+  }
+
+  // 3️⃣  No account found
+  return { ok: false, error: 'No account found for "' + username + '". Please create an account first.' };
+}
+
+// ── Helpers ───────────────────────────────────────────────────────────
+function showErr(msg) { document.getElementById('errMsg').textContent=msg; document.getElementById('errBanner').classList.add('show'); }
+function clearBanners() { document.getElementById('errBanner').classList.remove('show'); }
+
+document.addEventListener('keydown', e => {
+  if (e.key === 'Enter') handleLogin();
+});
+</script>
+</body>
+</html>

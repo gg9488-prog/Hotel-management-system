@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Restaurant Management</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    /* ── Page-specific ── */
+    .gauge-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 16px;
+      margin-top: 20px;
+    }
+    .gauge-item { }
+    .gauge-label {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      color: var(--text-secondary);
+      margin-bottom: 6px;
+    }
+    .gauge-label span:last-child { color: var(--gold-light); font-weight: 600; }
+
+    /* revenue chart bars */
+    .chart-bars {
+      display: flex;
+      align-items: flex-end;
+      gap: 8px;
+      height: 120px;
+      margin-top: 24px;
+      padding-top: 10px;
+    }
+    .bar-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 6px; }
+    .bar {
+      width: 100%;
+      border-radius: 4px 4px 0 0;
+      background: linear-gradient(180deg, var(--gold-light), var(--gold));
+      opacity: 0.8;
+      transform-origin: bottom;
+      animation: growUp 0.7s cubic-bezier(0.4,0,0.2,1) both;
+      min-height: 4px;
+    }
+    .bar.prev { background: var(--border); opacity: 1; }
+    @keyframes growUp {
+      from { transform: scaleY(0); }
+      to   { transform: scaleY(1); }
+    }
+    .bar-col:nth-child(1) .bar { animation-delay: 0.05s; }
+    .bar-col:nth-child(2) .bar { animation-delay: 0.10s; }
+    .bar-col:nth-child(3) .bar { animation-delay: 0.15s; }
+    .bar-col:nth-child(4) .bar { animation-delay: 0.20s; }
+    .bar-col:nth-child(5) .bar { animation-delay: 0.25s; }
+    .bar-col:nth-child(6) .bar { animation-delay: 0.30s; }
+    .bar-col:nth-child(7) .bar { animation-delay: 0.35s; }
+    .bar-label { font-size: 10px; color: var(--text-muted); }
+
+    .chart-legend {
+      display: flex;
+      gap: 20px;
+      margin-top: 14px;
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+    .legend-dot {
+      display: inline-block;
+      width: 8px; height: 8px;
+      border-radius: 2px;
+      margin-right: 6px;
+    }
+
+    /* table status dot */
+    .table-dot {
+      width: 9px; height: 9px;
+      border-radius: 50%;
+      display: inline-block;
+      margin-right: 8px;
+    }
+    .table-dot.open   { background: var(--success); }
+    .table-dot.busy   { background: var(--danger); }
+    .table-dot.res    { background: var(--warning); }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Sidebar ═══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span>
+    <h1>Saveur</h1>
+    <span>Restaurant Suite</span>
+  </div>
+
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html" class="nav-link active">
+      <span class="nav-icon">📊</span>
+      <span>Dashboard</span>
+    </a>
+    <a href="order.html" class="nav-link">
+      <span class="nav-icon">📋</span>
+      <span>Orders</span>
+      <span class="nav-badge">5</span>
+    </a>
+    <a href="menu.html" class="nav-link">
+      <span class="nav-icon">🧾</span>
+      <span>Menu</span>
+    </a>
+    <a href="tables.html" class="nav-link">
+      <span class="nav-icon">🪑</span>
+      <span>Tables</span>
+    </a>
+
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link">
+      <span class="nav-icon">👤</span>
+      <span>Customers</span>
+    </a>
+    <a href="staff.html" class="nav-link">
+      <span class="nav-icon">👨‍🍳</span>
+      <span>Staff</span>
+    </a>
+
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html" class="nav-link">
+      <span class="nav-icon">📈</span>
+      <span>Reports</span>
+    </a>
+    <a href="feedback.html" class="nav-link"><span class="nav-icon">⭐</span><span>Feedback</span></a>
+    <a href="settings.html" class="nav-link">
+      <span class="nav-icon">⚙️</span>
+      <span>Settings</span>
+    </a>
+  </nav>
+
+    <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ Main ═══════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <!-- Header -->
+  <div class="page-header">
+    <div class="breadcrumb">Dashboard</div>
+    <h2>Good Evening, Chef 👋</h2>
+    <p>Here's what's happening at your restaurant today.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid">
+    <div class="stat-card">
+      <span class="stat-icon">💰</span>
+      <div class="stat-label">Today's Revenue</div>
+      <div class="stat-value" id="rev">₹0</div>
+      <div class="stat-change">↑ 14.2% vs yesterday</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🛎️</span>
+      <div class="stat-label">Active Orders</div>
+      <div class="stat-value" id="ord">0</div>
+      <div class="stat-change">5 pending · 3 ready</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🪑</span>
+      <div class="stat-label">Tables Occupied</div>
+      <div class="stat-value" id="tbl">0/12</div>
+      <div class="stat-change down">↓ 2 freed up</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⭐</span>
+      <div class="stat-label">Avg Rating</div>
+      <div class="stat-value" id="rat">0</div>
+      <div class="stat-change">↑ 0.2 this week</div>
+    </div>
+  </div>
+
+  <!-- Content Grid -->
+  <div class="content-grid">
+
+    <!-- Revenue Chart -->
+    <div class="card" style="animation:fadeInUp 0.5s 0.2s ease both;">
+      <div class="card-header">
+        <div>
+          <div class="card-title">Weekly Revenue</div>
+          <div class="card-subtitle">Compared to last week</div>
+        </div>
+        <select class="form-control" style="width:auto;padding:8px 12px;font-size:12px;">
+          <option>This Week</option>
+          <option>Last Week</option>
+          <option>Last Month</option>
+        </select>
+      </div>
+
+      <div class="chart-bars" id="chart"></div>
+
+      <div class="chart-legend">
+        <span><span class="legend-dot" style="background:var(--gold)"></span>This week</span>
+        <span><span class="legend-dot" style="background:var(--border)"></span>Last week</span>
+      </div>
+    </div>
+
+    <!-- Quick Actions + Table Status -->
+    <div style="display:flex;flex-direction:column;gap:24px;">
+
+      <div class="card" style="animation:fadeInUp 0.5s 0.3s ease both;">
+        <div class="card-header" style="margin-bottom:16px;">
+          <div class="card-title">Quick Actions</div>
+        </div>
+        <div class="quick-actions">
+          <a href="order.html" class="quick-action-item">
+            <div class="qa-icon">📋</div>
+            <div class="qa-text">
+              <strong>New Order</strong>
+              <span>Place a table order</span>
+            </div>
+          </a>
+          <a href="customer.html" class="quick-action-item">
+            <div class="qa-icon">👤</div>
+            <div class="qa-text">
+              <strong>Add Customer</strong>
+              <span>Register a guest</span>
+            </div>
+          </a>
+          <a href="menu.html" class="quick-action-item">
+            <div class="qa-icon">🧾</div>
+            <div class="qa-text">
+              <strong>Update Menu</strong>
+              <span>Edit dishes & pricing</span>
+            </div>
+          </a>
+        </div>
+      </div>
+
+      <!-- Table Status -->
+      <div class="card" style="animation:fadeInUp 0.5s 0.4s ease both;">
+        <div class="card-header" style="margin-bottom:16px;">
+          <div class="card-title">Table Status</div>
+          <span class="badge badge-gold">Live</span>
+        </div>
+        <div id="table-status" style="display:flex;flex-direction:column;gap:10px;"></div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- Recent Orders -->
+  <div class="card" style="animation:fadeInUp 0.5s 0.5s ease both;">
+    <div class="card-header">
+      <div>
+        <div class="card-title">Recent Orders</div>
+        <div class="card-subtitle">Latest transactions today</div>
+      </div>
+      <a href="order.html" class="btn btn-outline btn-sm">View All →</a>
+    </div>
+
+    <div class="table-wrap">
+      <table class="data-table">
+        <thead>
+          <tr>
+            <th>Order ID</th>
+            <th>Customer</th>
+            <th>Table</th>
+            <th>Items</th>
+            <th>Amount</th>
+            <th>Status</th>
+            <th>Time</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Occupancy & Top Dishes -->
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:24px;margin-top:24px;">
+
+    <div class="card" style="animation:fadeInUp 0.5s 0.6s ease both;">
+      <div class="card-header" style="margin-bottom:20px;">
+        <div class="card-title">Section Occupancy</div>
+      </div>
+      <div class="gauge-grid" id="occupancy"></div>
+    </div>
+
+    <div class="card" style="animation:fadeInUp 0.5s 0.7s ease both;">
+      <div class="card-header" style="margin-bottom:20px;">
+        <div class="card-title">Top Dishes Today</div>
+      </div>
+      <div id="top-dishes" style="display:flex;flex-direction:column;gap:14px;"></div>
+    </div>
+
+  </div>
+
+</main>
+
+<script>
+/* ── Counter animation ── */
+function animateCount(el, target, prefix='', suffix='') {
+  let start = 0;
+  const step = target / 60;
+  const timer = setInterval(() => {
+    start += step;
+    if (start >= target) { start = target; clearInterval(timer); }
+    el.textContent = prefix + Math.floor(start).toLocaleString('en-IN') + suffix;
+  }, 16);
+}
+
+window.addEventListener('DOMContentLoaded', () => {
+  animateCount(document.getElementById('rev'), 48620, '₹');
+  animateCount(document.getElementById('ord'), 18);
+  document.getElementById('tbl').textContent = '8/12';
+  animateCount(document.getElementById('rat'), 4.7, '', '');
+  setTimeout(() => document.getElementById('rat').textContent = '4.7', 1100);
+
+  /* ── Chart ── */
+  const days = ['Mon','Tue','Wed','Thu','Fri','Sat','Sun'];
+  const curr = [320,450,380,510,420,680,860];
+  const prev = [280,400,360,460,390,600,720];
+  const maxVal = Math.max(...curr, ...prev);
+  const chart = document.getElementById('chart');
+  days.forEach((d,i) => {
+    const col = document.createElement('div');
+    col.className = 'bar-col';
+    col.innerHTML = `
+      <div class="bar" style="height:${(curr[i]/maxVal)*100}px;animation-delay:${0.05*(i+1)}s"></div>
+      <div class="bar prev" style="height:${(prev[i]/maxVal)*80}px;animation-delay:${0.05*(i+1)+0.3}s;margin-top:-${(prev[i]/maxVal)*80}px;opacity:0.35;border-radius:2px;"></div>
+      <div class="bar-label">${d}</div>`;
+    chart.appendChild(col);
+  });
+
+  /* ── Table Status ── */
+  const tables = [
+    {id:'T-01', guests:4, status:'busy', since:'7:32 PM'},
+    {id:'T-02', guests:0, status:'open', since:'—'},
+    {id:'T-03', guests:2, status:'res',  since:'8:00 PM'},
+    {id:'T-04', guests:6, status:'busy', since:'7:10 PM'},
+    {id:'T-05', guests:0, status:'open', since:'—'},
+  ];
+  const statusLabel = {busy:'Occupied', open:'Available', res:'Reserved'};
+  const statusBadge = {busy:'badge-danger', open:'badge-success', res:'badge-warning'};
+  const ts = document.getElementById('table-status');
+  tables.forEach(t => {
+    ts.innerHTML += `
+      <div style="display:flex;align-items:center;justify-content:space-between;padding:10px 14px;background:var(--bg-surface);border-radius:8px;border:1px solid var(--border);">
+        <span style="font-size:14px;font-weight:600;color:var(--text-primary);">
+          <span class="table-dot ${t.status}"></span>${t.id}
+        </span>
+        <span style="font-size:12px;color:var(--text-secondary);">${t.guests ? t.guests+' guests · '+t.since : t.since}</span>
+        <span class="badge ${statusBadge[t.status]}">${statusLabel[t.status]}</span>
+      </div>`;
+  });
+
+  /* ── Recent Orders ── */
+  const orders = [
+    {id:'#ORD-1042', cust:'Arjun Mehta', table:'T-04', items:3, amount:'₹1,240', status:'Served', time:'8:14 PM'},
+    {id:'#ORD-1041', cust:'Priya Nair',  table:'T-01', items:5, amount:'₹2,780', status:'Preparing', time:'8:07 PM'},
+    {id:'#ORD-1040', cust:'Rahul Das',   table:'T-07', items:2, amount:'₹640',  status:'Ready', time:'7:58 PM'},
+    {id:'#ORD-1039', cust:'Sneha Roy',   table:'T-02', items:4, amount:'₹1,950', status:'Served', time:'7:42 PM'},
+    {id:'#ORD-1038', cust:'Kiran Iyer',  table:'T-09', items:6, amount:'₹3,420', status:'Billed', time:'7:30 PM'},
+  ];
+  const statusBadgeO = {Served:'badge-success', Preparing:'badge-warning', Ready:'badge-info', Billed:'badge-gold'};
+  const tbody = document.getElementById('orders-tbody');
+  orders.forEach((o,i) => {
+    const tr = document.createElement('tr');
+    tr.style.animationDelay = (i*0.07)+'s';
+    tr.innerHTML = `
+      <td>${o.id}</td>
+      <td><div style="display:flex;align-items:center;gap:10px;">
+        <div class="avatar">${o.cust[0]}</div>${o.cust}
+      </div></td>
+      <td>${o.table}</td>
+      <td>${o.items} items</td>
+      <td style="color:var(--gold-light);font-weight:600;">${o.amount}</td>
+      <td><span class="badge ${statusBadgeO[o.status]}">${o.status}</span></td>
+      <td>${o.time}</td>`;
+    tbody.appendChild(tr);
+  });
+
+  /* ── Occupancy ── */
+  const sections = [
+    {name:'Main Hall',  pct:75},
+    {name:'Terrace',    pct:50},
+    {name:'Private Room',pct:100},
+    {name:'Bar Seating',pct:30},
+  ];
+  const occ = document.getElementById('occupancy');
+  sections.forEach(s => {
+    occ.innerHTML += `
+      <div class="gauge-item">
+        <div class="gauge-label"><span>${s.name}</span><span>${s.pct}%</span></div>
+        <div class="progress">
+          <div class="progress-fill" style="width:0%" data-width="${s.pct}%"></div>
+        </div>
+      </div>`;
+  });
+  setTimeout(() => {
+    document.querySelectorAll('.progress-fill').forEach(el => {
+      el.style.width = el.dataset.width;
+    });
+  }, 300);
+
+  /* ── Top Dishes ── */
+  const dishes = [
+    {name:'Butter Chicken', orders:34, revenue:'₹12,240'},
+    {name:'Dal Makhani',    orders:28, revenue:'₹7,840'},
+    {name:'Paneer Tikka',   orders:22, revenue:'₹9,020'},
+    {name:'Biryani (Hyd)',  orders:19, revenue:'₹13,490'},
+  ];
+  const td2 = document.getElementById('top-dishes');
+  dishes.forEach((d,i) => {
+    td2.innerHTML += `
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:12px;">
+        <div style="display:flex;align-items:center;gap:12px;flex:1;min-width:0;">
+          <div style="width:28px;height:28px;border-radius:6px;background:var(--gold-dim);display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;color:var(--gold-light);flex-shrink:0;">${i+1}</div>
+          <div style="min-width:0;">
+            <div style="font-size:13px;font-weight:600;color:var(--text-primary);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">${d.name}</div>
+            <div style="font-size:11px;color:var(--text-muted);">${d.orders} orders</div>
+          </div>
+        </div>
+        <div style="font-size:13px;font-weight:600;color:var(--gold-light);flex-shrink:0;">${d.revenue}</div>
+      </div>`;
+  });
+});
+</script>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

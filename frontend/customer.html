@@ -1,0 +1,401 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Customers</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .customer-grid {
+      display: grid;
+      grid-template-columns: 380px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .form-sticky { position: sticky; top: 32px; }
+
+    .customer-card-mini {
+      display: flex;
+      align-items: center;
+      gap: 14px;
+      padding: 16px;
+      border-radius: var(--radius-md);
+      border: 1px solid var(--border);
+      background: var(--bg-surface);
+      transition: var(--transition);
+      cursor: pointer;
+      animation: fadeInUp 0.4s ease both;
+    }
+    .customer-card-mini:hover {
+      border-color: var(--border-glow);
+      background: var(--bg-hover);
+    }
+    .cust-info { flex: 1; min-width: 0; }
+    .cust-name { font-size: 14px; font-weight: 600; color: var(--text-primary); }
+    .cust-detail { font-size: 12px; color: var(--text-muted); margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .cust-meta { text-align: right; flex-shrink: 0; }
+    .cust-visits { font-size: 12px; color: var(--gold-light); font-weight: 600; }
+    .cust-spend  { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+
+    .customers-list { display: flex; flex-direction: column; gap: 10px; }
+
+    .tier-badge {
+      font-size: 10px;
+      font-weight: 700;
+      padding: 2px 8px;
+      border-radius: 99px;
+      letter-spacing: 1px;
+    }
+    .tier-gold     { background: var(--gold-dim); color: var(--gold-light); }
+    .tier-silver   { background: rgba(160,160,180,0.12); color: #b0b0c0; }
+    .tier-bronze   { background: rgba(180,120,80,0.12);  color: #c09070; }
+    .tier-new      { background: rgba(92,158,224,0.12); color: var(--info); }
+
+    .form-title-row {
+      display: flex; align-items: center; gap: 12px; margin-bottom: 28px;
+    }
+    .form-title-row .back {
+      width: 32px; height: 32px;
+      border-radius: 8px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      display: flex; align-items: center; justify-content: center;
+      font-size: 16px;
+      cursor: pointer;
+      text-decoration: none;
+      color: var(--text-secondary);
+      transition: var(--transition);
+    }
+    .form-title-row .back:hover { border-color: var(--gold); color: var(--gold); }
+
+    .success-banner {
+      display: none;
+      background: rgba(76,175,130,0.12);
+      border: 1px solid rgba(76,175,130,0.3);
+      border-radius: var(--radius-md);
+      padding: 16px 20px;
+      margin-bottom: 24px;
+      font-size: 14px;
+      color: var(--success);
+      align-items: center;
+      gap: 12px;
+    }
+    .success-banner.show { display: flex; animation: fadeIn 0.3s ease; }
+
+    @media (max-width: 960px) {
+      .customer-grid { grid-template-columns: 1fr; }
+      .form-sticky { position: static; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Sidebar ═══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span>
+    <h1>Saveur</h1>
+    <span>Restaurant Suite</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html" class="nav-link">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </a>
+    <a href="order.html" class="nav-link">
+      <span class="nav-icon">📋</span><span>Orders</span>
+      <span class="nav-badge">5</span>
+    </a>
+    <a href="menu.html" class="nav-link">
+      <span class="nav-icon">🧾</span><span>Menu</span>
+    </a>
+    <a href="tables.html" class="nav-link">
+      <span class="nav-icon">🪑</span><span>Tables</span>
+    </a>
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link active">
+      <span class="nav-icon">👤</span><span>Customers</span>
+    </a>
+    <a href="staff.html" class="nav-link">
+      <span class="nav-icon">👨‍🍳</span><span>Staff</span>
+    </a>
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html" class="nav-link">
+      <span class="nav-icon">📈</span><span>Reports</span>
+    </a>
+    <a href="feedback.html" class="nav-link"><span class="nav-icon">⭐</span><span>Feedback</span></a>
+    <a href="settings.html" class="nav-link">
+      <span class="nav-icon">⚙️</span><span>Settings</span>
+    </a>
+  </nav>
+    <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ Main ═══════════════════════════════════════════════════════════ -->
+<main class="main">
+
+  <div class="page-header">
+    <div class="breadcrumb">People → Customers</div>
+    <h2>Customer Management</h2>
+    <p>Register guests and manage loyalty profiles.</p>
+  </div>
+
+  <!-- Stats Row -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:32px;">
+    <div class="stat-card">
+      <span class="stat-icon">👤</span>
+      <div class="stat-label">Total Customers</div>
+      <div class="stat-value">1,284</div>
+      <div class="stat-change">↑ 24 this month</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⭐</span>
+      <div class="stat-label">Gold Members</div>
+      <div class="stat-value">312</div>
+      <div class="stat-change">↑ 8 this month</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🔄</span>
+      <div class="stat-label">Returning Rate</div>
+      <div class="stat-value">68%</div>
+      <div class="stat-change">↑ 3% vs last month</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">💰</span>
+      <div class="stat-label">Avg Spend / Visit</div>
+      <div class="stat-value">₹1,840</div>
+      <div class="stat-change">↑ ₹120 this month</div>
+    </div>
+  </div>
+
+  <div class="customer-grid">
+
+    <!-- Add Customer Form -->
+    <div class="form-sticky">
+      <div class="card">
+        <div class="form-title-row">
+          <a href="index.html" class="back">←</a>
+          <div>
+            <div class="card-title">Register Customer</div>
+            <div class="card-subtitle">Add a new guest profile</div>
+          </div>
+        </div>
+
+        <div class="success-banner" id="successBanner">
+          <span>✅</span>
+          <div>
+            <div style="font-weight:600;">Customer added!</div>
+            <div style="font-size:12px;margin-top:2px;">Profile has been saved successfully.</div>
+          </div>
+        </div>
+
+        <form id="customerForm" action="AddCustomer" method="post" onsubmit="handleSubmit(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="customer_id">Customer ID</label>
+              <input class="form-control" type="text" id="customer_id" name="customer_id" placeholder="e.g. CUST-001" required />
+            </div>
+            <div class="form-group">
+              <label for="tier">Membership Tier</label>
+              <select class="form-control" id="tier" name="tier">
+                <option value="new">New Guest</option>
+                <option value="bronze">Bronze</option>
+                <option value="silver">Silver</option>
+                <option value="gold">Gold</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label for="name">Full Name</label>
+              <input class="form-control" type="text" id="name" name="name" placeholder="e.g. Arjun Mehta" required />
+            </div>
+            <div class="form-group">
+              <label for="phone">Phone Number</label>
+              <input class="form-control" type="tel" id="phone" name="phone" placeholder="+91 98765 43210" required />
+            </div>
+            <div class="form-group">
+              <label for="email">Email Address</label>
+              <input class="form-control" type="email" id="email" name="email" placeholder="guest@example.com" />
+            </div>
+            <div class="form-group full">
+              <label for="dob">Date of Birth</label>
+              <input class="form-control" type="date" id="dob" name="dob" />
+            </div>
+            <div class="form-group full">
+              <label for="notes">Special Notes</label>
+              <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="Dietary restrictions, preferences…" style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:24px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;">
+              ✦ Register Customer
+            </button>
+            <button type="reset" class="btn btn-outline">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Customer List -->
+    <div class="card">
+      <div class="card-header">
+        <div>
+          <div class="card-title">All Customers</div>
+          <div class="card-subtitle" id="custCount">1,284 registered guests</div>
+        </div>
+        <button class="btn btn-outline btn-sm">Export CSV</button>
+      </div>
+
+      <div class="toolbar">
+        <div class="search-box">
+          <span class="search-icon">🔍</span>
+          <input class="form-control" type="text" placeholder="Search by name, phone or ID…" id="searchInput" oninput="filterCustomers()" />
+        </div>
+        <select class="form-control" style="width:auto;" id="tierFilter" onchange="filterCustomers()">
+          <option value="">All Tiers</option>
+          <option value="gold">Gold</option>
+          <option value="silver">Silver</option>
+          <option value="bronze">Bronze</option>
+          <option value="new">New</option>
+        </select>
+      </div>
+
+      <div class="customers-list" id="customersList"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none;">
+  <span class="toast-icon">✅</span>
+  <div>
+    <div class="toast-msg">Customer registered!</div>
+    <div class="toast-sub">Profile saved to database.</div>
+  </div>
+</div>
+
+<script>
+const customers = [
+  {id:'CUST-001', name:'Arjun Mehta',   phone:'+91 98001 23456', email:'arjun@mail.com',    tier:'gold',   visits:24, spend:'₹44,200'},
+  {id:'CUST-002', name:'Priya Nair',    phone:'+91 97002 34567', email:'priya@mail.com',    tier:'silver', visits:12, spend:'₹18,600'},
+  {id:'CUST-003', name:'Rahul Das',     phone:'+91 96003 45678', email:'rahul@mail.com',    tier:'bronze', visits:5,  spend:'₹7,400'},
+  {id:'CUST-004', name:'Sneha Roy',     phone:'+91 95004 56789', email:'sneha@mail.com',    tier:'gold',   visits:31, spend:'₹62,100'},
+  {id:'CUST-005', name:'Kiran Iyer',    phone:'+91 94005 67890', email:'kiran@mail.com',    tier:'silver', visits:9,  spend:'₹14,300'},
+  {id:'CUST-006', name:'Ananya Sharma', phone:'+91 93006 78901', email:'ananya@mail.com',   tier:'new',    visits:1,  spend:'₹1,240'},
+  {id:'CUST-007', name:'Vikram Patel',  phone:'+91 92007 89012', email:'vikram@mail.com',   tier:'gold',   visits:18, spend:'₹33,800'},
+  {id:'CUST-008', name:'Meera Bose',    phone:'+91 91008 90123', email:'meera@mail.com',    tier:'bronze', visits:4,  spend:'₹5,900'},
+];
+
+const tierBadge = {gold:'tier-badge tier-gold', silver:'tier-badge tier-silver', bronze:'tier-badge tier-bronze', new:'tier-badge tier-new'};
+const tierLabel = {gold:'Gold', silver:'Silver', bronze:'Bronze', new:'New'};
+
+let allCustomers = [...customers];
+
+function renderCustomers(list) {
+  const container = document.getElementById('customersList');
+  container.innerHTML = '';
+  list.forEach((c, i) => {
+    const div = document.createElement('div');
+    div.className = 'customer-card-mini';
+    div.style.animationDelay = (i * 0.05) + 's';
+    div.innerHTML = `
+      <div class="avatar" style="width:40px;height:40px;font-size:15px;">${c.name[0]}</div>
+      <div class="cust-info">
+        <div class="cust-name">${c.name} <span class="${tierBadge[c.tier]}">${tierLabel[c.tier]}</span></div>
+        <div class="cust-detail">${c.phone} · ${c.email}</div>
+        <div class="cust-detail" style="color:var(--text-muted);margin-top:2px;">${c.id}</div>
+      </div>
+      <div class="cust-meta">
+        <div class="cust-visits">${c.visits} visits</div>
+        <div class="cust-spend">${c.spend}</div>
+      </div>`;
+    container.appendChild(div);
+  });
+}
+
+function filterCustomers() {
+  const q = document.getElementById('searchInput').value.toLowerCase();
+  const tier = document.getElementById('tierFilter').value;
+  const filtered = allCustomers.filter(c =>
+    (!q || c.name.toLowerCase().includes(q) || c.phone.includes(q) || c.id.toLowerCase().includes(q)) &&
+    (!tier || c.tier === tier)
+  );
+  renderCustomers(filtered);
+  document.getElementById('custCount').textContent = filtered.length + ' guests shown';
+}
+
+renderCustomers(allCustomers);
+
+function handleSubmit(e) {
+  e.preventDefault();
+  const name = document.getElementById('name').value.trim();
+  const id   = document.getElementById('customer_id').value.trim();
+  const phone= document.getElementById('phone').value.trim();
+  const tier = document.getElementById('tier').value;
+
+  // Add to local list for demo (real app would POST to servlet)
+  const newCust = { id, name, phone, email: document.getElementById('email').value, tier, visits: 0, spend: '₹0' };
+  allCustomers.unshift(newCust);
+  renderCustomers(allCustomers);
+  document.getElementById('custCount').textContent = allCustomers.length + ' registered guests';
+
+  // Banner
+  document.getElementById('successBanner').classList.add('show');
+  setTimeout(() => document.getElementById('successBanner').classList.remove('show'), 4000);
+
+  // Toast
+  const t = document.getElementById('toast');
+  t.style.display = 'flex';
+  setTimeout(() => { t.classList.add('hide'); setTimeout(() => { t.style.display='none'; t.classList.remove('hide'); }, 300); }, 3500);
+
+  e.target.reset();
+
+  // In production: fetch('/AddCustomer', {method:'POST', body: new FormData(e.target)})
+}
+</script>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

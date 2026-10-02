@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Orders</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .order-layout {
+      display: grid;
+      grid-template-columns: 420px 1fr;
+      gap: 28px;
+      align-items: start;
+    }
+    .form-sticky { position: sticky; top: 32px; }
+
+    /* order card */
+    .order-card {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      transition: var(--transition);
+      animation: fadeInUp 0.35s ease both;
+    }
+    .order-card:hover { border-color: var(--border-glow); }
+
+    .order-card-header {
+      display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 14px;
+    }
+    .order-id { font-family:'Cormorant Garamond',serif; font-size:18px; font-weight:700; color:var(--text-primary); }
+    .order-time { font-size:12px; color:var(--text-muted); margin-top:2px; }
+
+    .order-items {
+      display: flex; flex-direction: column; gap: 6px;
+      margin: 12px 0;
+    }
+    .order-item-row {
+      display: flex; justify-content: space-between;
+      font-size: 13px; color: var(--text-secondary);
+    }
+    .order-item-row span:last-child { color: var(--text-primary); font-weight:500; }
+
+    .order-footer {
+      display: flex; justify-content: space-between; align-items: center;
+      padding-top: 12px; border-top: 1px solid var(--border);
+      margin-top: 4px;
+    }
+    .order-total { font-size:18px; font-weight:700; color:var(--gold-light); font-family:'Cormorant Garamond',serif; }
+
+    /* kanban columns */
+    .kanban {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 20px;
+    }
+    .kanban-col {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-md);
+      padding: 18px;
+      min-height: 300px;
+    }
+    .kanban-col-header {
+      display: flex; align-items: center; justify-content: space-between;
+      margin-bottom: 16px;
+      padding-bottom: 12px;
+      border-bottom: 1px solid var(--border);
+    }
+    .kanban-col-title { font-size: 13px; font-weight: 600; color: var(--text-primary); }
+    .kanban-count { font-size: 11px; font-weight: 700; padding: 2px 8px; border-radius: 99px; }
+
+    .kanban-card {
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 12px;
+      margin-bottom: 10px;
+      cursor: grab;
+      transition: var(--transition);
+      animation: fadeIn 0.3s ease both;
+    }
+    .kanban-card:hover { border-color: var(--border-glow); transform: translateY(-1px); box-shadow: var(--shadow-card); }
+    .kanban-card-id { font-size: 12px; font-weight: 700; color: var(--gold-light); margin-bottom: 6px; }
+    .kanban-card-cust { font-size: 13px; color: var(--text-primary); font-weight: 500; }
+    .kanban-card-table { font-size: 11px; color: var(--text-muted); margin-top: 4px; }
+    .kanban-card-footer { display:flex; justify-content:space-between; align-items:center; margin-top:10px; padding-top:8px; border-top:1px solid var(--border); }
+    .kanban-time { font-size:11px; color:var(--text-muted); }
+
+    /* status colours */
+    .col-pending   .kanban-col-header { border-bottom-color: rgba(92,158,224,0.3); }
+    .col-preparing .kanban-col-header { border-bottom-color: rgba(232,160,76,0.3); }
+    .col-ready     .kanban-col-header { border-bottom-color: rgba(76,175,130,0.3); }
+    .col-served    .kanban-col-header { border-bottom-color: rgba(196,155,76,0.3); }
+
+    .item-picker {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 8px;
+    }
+    .item-btn {
+      padding: 8px 10px;
+      border-radius: 6px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      cursor: pointer;
+      transition: var(--transition);
+      font-size: 12px;
+      color: var(--text-secondary);
+      text-align: left;
+      font-family: 'DM Sans', sans-serif;
+    }
+    .item-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .item-btn.selected { border-color: var(--gold); background: var(--gold-dim); color: var(--gold-light); }
+    .item-btn .item-price { display:block; font-size:11px; color:var(--text-muted); margin-top:2px; }
+    .item-btn.selected .item-price { color: var(--gold); }
+
+    .order-summary-box {
+      background: var(--bg-surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      padding: 14px 16px;
+      margin-top: 16px;
+    }
+    .summary-row { display:flex; justify-content:space-between; font-size:13px; color:var(--text-secondary); padding:4px 0; }
+    .summary-total { color:var(--gold-light); font-weight:700; font-size:15px; border-top:1px solid var(--border); margin-top:8px; padding-top:8px; }
+
+    @media (max-width: 1100px) {
+      .order-layout { grid-template-columns: 1fr; }
+      .form-sticky { position: static; }
+      .kanban { grid-template-columns: repeat(2, 1fr); }
+    }
+    @media (max-width: 640px) {
+      .kanban { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ═══ Sidebar ═══════════════════════════════════════════════════════ -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span>
+    <h1>Saveur</h1>
+    <span>Restaurant Suite</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html" class="nav-link">
+      <span class="nav-icon">📊</span><span>Dashboard</span>
+    </a>
+    <a href="order.html" class="nav-link active">
+      <span class="nav-icon">📋</span><span>Orders</span>
+      <span class="nav-badge">5</span>
+    </a>
+    <a href="menu.html" class="nav-link">
+      <span class="nav-icon">🧾</span><span>Menu</span>
+    </a>
+    <a href="tables.html" class="nav-link">
+      <span class="nav-icon">🪑</span><span>Tables</span>
+    </a>
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link">
+      <span class="nav-icon">👤</span><span>Customers</span>
+    </a>
+    <a href="staff.html" class="nav-link">
+      <span class="nav-icon">👨‍🍳</span><span>Staff</span>
+    </a>
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html" class="nav-link">
+      <span class="nav-icon">📈</span><span>Reports</span>
+    </a>
+    <a href="feedback.html" class="nav-link"><span class="nav-icon">⭐</span><span>Feedback</span></a>
+    <a href="settings.html" class="nav-link">
+      <span class="nav-icon">⚙️</span><span>Settings</span>
+    </a>
+  </nav>
+    <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ═══ Main ═══════════════════════════════════════════════════════════ -->
+<main class="main">
+  <div class="page-header">
+    <div class="breadcrumb">Main → Orders</div>
+    <h2>Order Management</h2>
+    <p>Place new orders and track kitchen progress in real time.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);margin-bottom:32px;">
+    <div class="stat-card">
+      <span class="stat-icon">🛎️</span>
+      <div class="stat-label">Total Today</div>
+      <div class="stat-value">42</div>
+      <div class="stat-change">↑ 6 vs yesterday</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⏱️</span>
+      <div class="stat-label">Avg Prep Time</div>
+      <div class="stat-value">18m</div>
+      <div class="stat-change down">↑ 2m slower today</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">✅</span>
+      <div class="stat-label">Completed</div>
+      <div class="stat-value">37</div>
+      <div class="stat-change">88% completion rate</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">💰</span>
+      <div class="stat-label">Revenue</div>
+      <div class="stat-value">₹72k</div>
+      <div class="stat-change">↑ 12% vs yesterday</div>
+    </div>
+  </div>
+
+  <div class="order-layout">
+
+    <!-- New Order Form -->
+    <div class="form-sticky">
+      <div class="card">
+        <div class="card-header" style="margin-bottom:24px;">
+          <div>
+            <div class="card-title">Place New Order</div>
+            <div class="card-subtitle">Select table, items & guest</div>
+          </div>
+          <span class="badge badge-info" id="liveTag">● Live</span>
+        </div>
+
+        <form id="orderForm" action="AddOrder" method="post" onsubmit="handleOrder(event)">
+          <div class="form-grid">
+            <div class="form-group">
+              <label for="order_id">Order ID</label>
+              <input class="form-control" type="text" id="order_id" name="order_id" placeholder="Auto-generated" />
+            </div>
+            <div class="form-group">
+              <label for="table_id">Table</label>
+              <select class="form-control" id="table_id" name="table_id" required>
+                <option value="">Select table</option>
+                <option value="T-01">T-01 (4 seats)</option>
+                <option value="T-02">T-02 (2 seats)</option>
+                <option value="T-03">T-03 (6 seats)</option>
+                <option value="T-04">T-04 (4 seats)</option>
+                <option value="T-05">T-05 (8 seats)</option>
+                <option value="T-06">T-06 (2 seats)</option>
+              </select>
+            </div>
+            <div class="form-group full">
+              <label for="customer_id">Customer</label>
+              <input class="form-control" type="text" id="customer_id" name="customer_id" list="cust-list" placeholder="Search customer ID or name…" />
+              <datalist id="cust-list">
+                <option value="CUST-001 — Arjun Mehta">
+                <option value="CUST-002 — Priya Nair">
+                <option value="CUST-003 — Rahul Das">
+                <option value="CUST-004 — Sneha Roy">
+              </datalist>
+            </div>
+            <div class="form-group">
+              <label for="order_date">Date</label>
+              <input class="form-control" type="date" id="order_date" name="order_date" required />
+            </div>
+            <div class="form-group">
+              <label for="order_time">Time</label>
+              <input class="form-control" type="time" id="order_time" name="order_time" />
+            </div>
+            <div class="form-group full">
+              <label>Select Items</label>
+              <div class="item-picker" id="itemPicker"></div>
+            </div>
+            <div class="form-group full">
+              <label for="notes">Special Instructions</label>
+              <textarea class="form-control" id="notes" name="notes" rows="2" placeholder="No spice, extra sauce…" style="resize:vertical;"></textarea>
+            </div>
+          </div>
+
+          <!-- Summary -->
+          <div class="order-summary-box" id="summaryBox" style="display:none;">
+            <div id="summaryItems"></div>
+            <div class="summary-row summary-total">
+              <span>Total</span>
+              <span id="summaryTotal">₹0</span>
+            </div>
+          </div>
+
+          <div style="display:flex;gap:12px;margin-top:20px;">
+            <button type="submit" class="btn btn-primary" style="flex:1;">
+              🛎️ Place Order
+            </button>
+            <button type="reset" class="btn btn-outline" onclick="resetItems()">Clear</button>
+          </div>
+        </form>
+      </div>
+    </div>
+
+    <!-- Kanban Board -->
+    <div>
+      <div class="card-header" style="margin-bottom:20px;">
+        <div>
+          <div class="card-title" style="font-family:'Cormorant Garamond',serif;font-size:22px;">Kitchen Board</div>
+          <div class="card-subtitle">Drag cards to update status</div>
+        </div>
+        <button class="btn btn-outline btn-sm" onclick="location.reload()">↻ Refresh</button>
+      </div>
+      <div class="kanban" id="kanban"></div>
+    </div>
+
+  </div>
+</main>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none;">
+  <span class="toast-icon">🛎️</span>
+  <div>
+    <div class="toast-msg" id="toastMsg">Order placed!</div>
+    <div class="toast-sub" id="toastSub">Sent to kitchen.</div>
+  </div>
+</div>
+
+<script>
+/* ── Menu Items ── */
+const menuItems = [
+  {id:'m1', name:'Butter Chicken', price:520},
+  {id:'m2', name:'Dal Makhani',    price:360},
+  {id:'m3', name:'Paneer Tikka',   price:440},
+  {id:'m4', name:'Biryani',        price:480},
+  {id:'m5', name:'Naan (2 pcs)',   price:80},
+  {id:'m6', name:'Lassi',          price:120},
+  {id:'m7', name:'Gulab Jamun',    price:140},
+  {id:'m8', name:'Thali Special',  price:680},
+];
+
+let selected = {};
+
+function renderItemPicker() {
+  const p = document.getElementById('itemPicker');
+  p.innerHTML = '';
+  menuItems.forEach(item => {
+    const btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'item-btn' + (selected[item.id] ? ' selected' : '');
+    btn.innerHTML = `${item.name}<span class="item-price">₹${item.price}</span>`;
+    btn.onclick = () => {
+      if (selected[item.id]) delete selected[item.id];
+      else selected[item.id] = item;
+      renderItemPicker();
+      updateSummary();
+    };
+    p.appendChild(btn);
+  });
+}
+
+function updateSummary() {
+  const keys = Object.keys(selected);
+  const box = document.getElementById('summaryBox');
+  if (keys.length === 0) { box.style.display = 'none'; return; }
+  box.style.display = 'block';
+  let total = 0;
+  let html = '';
+  keys.forEach(k => {
+    const it = selected[k];
+    total += it.price;
+    html += `<div class="summary-row"><span>${it.name}</span><span>₹${it.price}</span></div>`;
+  });
+  document.getElementById('summaryItems').innerHTML = html;
+  document.getElementById('summaryTotal').textContent = '₹' + total.toLocaleString('en-IN');
+}
+
+function resetItems() { selected = {}; renderItemPicker(); updateSummary(); }
+
+renderItemPicker();
+
+// Set defaults
+const now = new Date();
+document.getElementById('order_date').value = now.toISOString().split('T')[0];
+document.getElementById('order_time').value = now.toTimeString().slice(0,5);
+document.getElementById('order_id').value = '#ORD-' + (1042 + Math.floor(Math.random()*10));
+
+/* ── Kanban Data ── */
+const kOrders = {
+  pending: [
+    {id:'#ORD-1041', cust:'Priya Nair',    table:'T-01', items:'Butter Chicken, Naan', total:'₹600', time:'8:07 PM'},
+    {id:'#ORD-1043', cust:'Dev Kapoor',    table:'T-06', items:'Biryani, Lassi',       total:'₹600', time:'8:20 PM'},
+  ],
+  preparing: [
+    {id:'#ORD-1040', cust:'Rahul Das',     table:'T-07', items:'Paneer Tikka',         total:'₹440', time:'7:58 PM'},
+    {id:'#ORD-1044', cust:'Leena Shah',    table:'T-03', items:'Thali Special × 2',   total:'₹1,360',time:'8:15 PM'},
+    {id:'#ORD-1045', cust:'Raj Sharma',    table:'T-05', items:'Dal Makhani, Naan',    total:'₹440', time:'8:18 PM'},
+  ],
+  ready: [
+    {id:'#ORD-1038', cust:'Kiran Iyer',    table:'T-09', items:'Biryani, Gulab Jamun', total:'₹620', time:'7:30 PM'},
+  ],
+  served: [
+    {id:'#ORD-1039', cust:'Sneha Roy',     table:'T-02', items:'Butter Chicken × 2',  total:'₹1,040',time:'7:42 PM'},
+    {id:'#ORD-1042', cust:'Arjun Mehta',   table:'T-04', items:'Thali Special',        total:'₹680', time:'8:14 PM'},
+  ],
+};
+
+const colMeta = {
+  pending:   {label:'Pending',   badge:'badge-info',    icon:'⏳'},
+  preparing: {label:'Preparing', badge:'badge-warning', icon:'👨‍🍳'},
+  ready:     {label:'Ready',     badge:'badge-success', icon:'✅'},
+  served:    {label:'Served',    badge:'badge-gold',    icon:'🍽️'},
+};
+
+function buildKanban() {
+  const kb = document.getElementById('kanban');
+  kb.innerHTML = '';
+  Object.keys(kOrders).forEach(colKey => {
+    const meta = colMeta[colKey];
+    const orders = kOrders[colKey];
+    const col = document.createElement('div');
+    col.className = `kanban-col col-${colKey}`;
+    col.dataset.col = colKey;
+    col.innerHTML = `
+      <div class="kanban-col-header">
+        <span class="kanban-col-title">${meta.icon} ${meta.label}</span>
+        <span class="badge ${meta.badge} kanban-count">${orders.length}</span>
+      </div>
+      <div class="kanban-cards" id="col-${colKey}"></div>`;
+    kb.appendChild(col);
+    const cardsEl = col.querySelector('.kanban-cards');
+    orders.forEach((o, i) => {
+      const card = document.createElement('div');
+      card.className = 'kanban-card';
+      card.style.animationDelay = (i * 0.07) + 's';
+      card.draggable = true;
+      card.dataset.id = o.id;
+      card.dataset.from = colKey;
+      card.innerHTML = `
+        <div class="kanban-card-id">${o.id}</div>
+        <div class="kanban-card-cust">${o.cust}</div>
+        <div class="kanban-card-table">🪑 ${o.table} · ${o.items}</div>
+        <div class="kanban-card-footer">
+          <span class="kanban-time">${o.time}</span>
+          <span style="font-size:13px;font-weight:700;color:var(--gold-light);">${o.total}</span>
+        </div>`;
+      cardsEl.appendChild(card);
+    });
+  });
+  // Drag events
+  document.querySelectorAll('.kanban-card').forEach(card => {
+    card.addEventListener('dragstart', e => {
+      e.dataTransfer.setData('id', card.dataset.id);
+      e.dataTransfer.setData('from', card.dataset.from);
+      card.style.opacity = '0.4';
+    });
+    card.addEventListener('dragend', e => { card.style.opacity = '1'; });
+  });
+  document.querySelectorAll('.kanban-col').forEach(col => {
+    col.addEventListener('dragover', e => { e.preventDefault(); col.style.background = 'var(--bg-hover)'; });
+    col.addEventListener('dragleave', () => { col.style.background = ''; });
+    col.addEventListener('drop', e => {
+      e.preventDefault();
+      col.style.background = '';
+      const from = e.dataTransfer.getData('from');
+      const id   = e.dataTransfer.getData('id');
+      const to   = col.dataset.col;
+      if (from === to) return;
+      const idx = kOrders[from].findIndex(o => o.id === id);
+      if (idx === -1) return;
+      const order = kOrders[from].splice(idx, 1)[0];
+      kOrders[to].push(order);
+      buildKanban();
+      showToast('Order moved', id + ' → ' + colMeta[to].label, colMeta[to].icon);
+    });
+  });
+}
+
+buildKanban();
+
+/* ── Handle new order ── */
+function handleOrder(e) {
+  e.preventDefault();
+  const table = document.getElementById('table_id').value;
+  const ordId = document.getElementById('order_id').value || ('#ORD-' + Date.now());
+  const itemNames = Object.values(selected).map(i=>i.name).join(', ') || 'New Order';
+  const total = '₹' + Object.values(selected).reduce((a,b)=>a+b.price,0).toLocaleString('en-IN');
+  const now = new Date();
+  const timeStr = now.toLocaleTimeString('en-IN', {hour:'2-digit', minute:'2-digit'});
+
+  kOrders.pending.push({
+    id: ordId, cust: document.getElementById('customer_id').value || 'Walk-in',
+    table, items: itemNames, total, time: timeStr
+  });
+  buildKanban();
+  showToast('Order placed!', ordId + ' sent to kitchen', '🛎️');
+  e.target.reset();
+  resetItems();
+  document.getElementById('order_id').value = '#ORD-' + (1050 + Math.floor(Math.random()*50));
+  document.getElementById('order_date').value = new Date().toISOString().split('T')[0];
+}
+
+function showToast(msg, sub, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastSub').textContent = sub;
+  t.querySelector('.toast-icon').textContent = icon;
+  t.style.display = 'flex';
+  t.classList.remove('hide');
+  setTimeout(() => { t.classList.add('hide'); setTimeout(()=>{ t.style.display='none'; t.classList.remove('hide'); }, 300); }, 3500);
+}
+
+// Live badge blink
+setInterval(() => {
+  const tag = document.getElementById('liveTag');
+  tag.style.opacity = tag.style.opacity === '0.3' ? '1' : '0.3';
+}, 800);
+</script>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>

@@ -1,0 +1,643 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Saveur — Menu</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+    .menu-tabs {
+      display: flex; gap: 8px; margin-bottom: 28px; flex-wrap: wrap;
+    }
+    .tab-btn {
+      padding: 9px 20px; border-radius: 99px;
+      border: 1px solid var(--border);
+      background: transparent; color: var(--text-secondary);
+      font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 500;
+      cursor: pointer; transition: var(--transition);
+    }
+    .tab-btn:hover { border-color: var(--gold); color: var(--gold); }
+    .tab-btn.active {
+      background: var(--gold-dim); border-color: var(--gold);
+      color: var(--gold-light); font-weight: 600;
+    }
+    .menu-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 24px;
+    }
+    .menu-card {
+      background: var(--bg-card); border: 1px solid var(--border);
+      border-radius: var(--radius-lg); overflow: hidden;
+      transition: var(--transition); animation: fadeInUp 0.4s ease both;
+      cursor: pointer;
+    }
+    .menu-card:hover {
+      border-color: var(--border-glow);
+      box-shadow: var(--shadow-card), var(--shadow-glow);
+      transform: translateY(-4px);
+    }
+    .menu-card-img {
+      width: 100%; height: 180px; object-fit: cover;
+      display: block; transition: transform 0.4s ease;
+    }
+    .menu-card:hover .menu-card-img { transform: scale(1.05); }
+    .menu-card-img-wrap {
+      overflow: hidden; position: relative; height: 180px;
+    }
+    .menu-card-badge {
+      position: absolute; top: 12px; right: 12px;
+      background: rgba(10,10,12,0.85); backdrop-filter: blur(6px);
+      border: 1px solid var(--border-glow); border-radius: 99px;
+      font-size: 11px; font-weight: 600; padding: 4px 10px;
+      color: var(--gold-light);
+    }
+    .menu-card-veg {
+      position: absolute; top: 12px; left: 12px;
+      width: 20px; height: 20px; border-radius: 4px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 8px; font-weight: 700;
+    }
+    .menu-card-veg.veg { background: #1a3a1a; border: 1.5px solid #4caf82; color: #4caf82; }
+    .menu-card-veg.nonveg { background: #3a1a1a; border: 1.5px solid #e05c5c; color: #e05c5c; }
+    .menu-card-body { padding: 18px; }
+    .menu-card-name {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 18px; font-weight: 600; color: var(--text-primary);
+      margin-bottom: 6px;
+    }
+    .menu-card-desc {
+      font-size: 12px; color: var(--text-muted); line-height: 1.5;
+      margin-bottom: 14px; min-height: 36px;
+    }
+    .menu-card-footer {
+      display: flex; align-items: center; justify-content: space-between;
+    }
+    .menu-price {
+      font-family: 'Cormorant Garamond', serif;
+      font-size: 22px; font-weight: 700; color: var(--gold-light);
+    }
+    .menu-card-actions { display: flex; gap: 8px; }
+    .btn-icon-sm {
+      width: 32px; height: 32px; border-radius: 8px;
+      border: 1px solid var(--border); background: var(--bg-surface);
+      color: var(--text-secondary); cursor: pointer;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 14px; transition: var(--transition);
+    }
+    .btn-icon-sm:hover { border-color: var(--gold); color: var(--gold); }
+    .btn-icon-sm.del:hover { border-color: var(--danger); color: var(--danger); }
+    .rating-stars { font-size: 11px; color: var(--warning); margin-bottom: 4px; }
+
+    /* Add/Edit Modal */
+    .img-preview-wrap {
+      width: 100%; height: 160px; border-radius: var(--radius-md);
+      border: 2px dashed var(--border); overflow: hidden;
+      display: flex; align-items: center; justify-content: center;
+      color: var(--text-muted); font-size: 13px; cursor: pointer;
+      transition: var(--transition); background: var(--bg-surface);
+      margin-bottom: 16px; position: relative;
+    }
+    .img-preview-wrap:hover { border-color: var(--gold); }
+    .img-preview-wrap img { width: 100%; height: 100%; object-fit: cover; }
+    .img-preview-wrap .upload-hint {
+      display: flex; flex-direction: column; align-items: center; gap: 8px;
+      pointer-events: none;
+    }
+    .img-preview-wrap .upload-hint span:first-child { font-size: 28px; }
+
+    /* Photo Modal */
+    .photo-modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.92);
+      z-index: 500; display: flex; align-items: center; justify-content: center;
+      opacity: 0; pointer-events: none; transition: opacity 0.3s;
+    }
+    .photo-modal-overlay.open { opacity: 1; pointer-events: all; }
+    .photo-modal-img {
+      max-width: 90vw; max-height: 80vh; border-radius: var(--radius-lg);
+      box-shadow: 0 20px 80px rgba(0,0,0,0.9);
+      transform: scale(0.9); transition: transform 0.3s ease;
+    }
+    .photo-modal-overlay.open .photo-modal-img { transform: scale(1); }
+    .photo-modal-close {
+      position: absolute; top: 24px; right: 24px;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+      border-radius: 50%; width: 44px; height: 44px;
+      display: flex; align-items: center; justify-content: center;
+      font-size: 20px; cursor: pointer; color: white;
+      transition: var(--transition);
+    }
+    .photo-modal-close:hover { background: rgba(255,255,255,0.2); }
+    .photo-modal-info {
+      position: absolute; bottom: 32px; left: 50%; transform: translateX(-50%);
+      background: rgba(10,10,12,0.85); backdrop-filter: blur(8px);
+      border: 1px solid var(--border-glow); border-radius: var(--radius-md);
+      padding: 14px 24px; text-align: center;
+    }
+    .photo-modal-info h3 { font-family: 'Cormorant Garamond', serif; font-size: 22px; color: var(--text-primary); }
+    .photo-modal-info p { font-size: 13px; color: var(--text-muted); margin-top: 4px; }
+
+    .empty-state {
+      grid-column: 1/-1; text-align: center; padding: 60px 20px;
+      color: var(--text-muted);
+    }
+    .empty-state .empty-icon { font-size: 48px; margin-bottom: 16px; }
+    .empty-state p { font-size: 15px; }
+
+    .stock-toggle {
+      position: absolute; bottom: 12px; left: 12px;
+      font-size: 11px; font-weight: 600; padding: 3px 10px;
+      border-radius: 99px; border: none; cursor: pointer;
+    }
+    .in-stock { background: rgba(76,175,130,0.2); color: #4caf82; }
+    .out-stock { background: rgba(224,92,92,0.2); color: #e05c5c; }
+    .menu-card.unavailable { opacity: 0.55; }
+    .menu-card.unavailable .menu-card-img { filter: grayscale(0.6); }
+  </style>
+</head>
+<body>
+
+<!-- Sidebar -->
+<aside class="sidebar">
+  <div class="sidebar-logo">
+    <span class="logo-icon">🍽️</span>
+    <h1>Saveur</h1>
+    <span>Restaurant Suite</span>
+  </div>
+  <nav class="sidebar-nav">
+    <div class="nav-section-label">Main</div>
+    <a href="index.html" class="nav-link"><span class="nav-icon">📊</span><span>Dashboard</span></a>
+    <a href="order.html" class="nav-link"><span class="nav-icon">📋</span><span>Orders</span><span class="nav-badge">5</span></a>
+    <a href="menu.html" class="nav-link active"><span class="nav-icon">🧾</span><span>Menu</span></a>
+    <a href="tables.html" class="nav-link"><span class="nav-icon">🪑</span><span>Tables</span></a>
+    <div class="nav-section-label">People</div>
+    <a href="customer.html" class="nav-link"><span class="nav-icon">👤</span><span>Customers</span></a>
+    <a href="staff.html" class="nav-link"><span class="nav-icon">👨‍🍳</span><span>Staff</span></a>
+    <div class="nav-section-label">Finance</div>
+    <a href="reports.html" class="nav-link"><span class="nav-icon">📈</span><span>Reports</span></a>
+    <a href="feedback.html" class="nav-link"><span class="nav-icon">⭐</span><span>Feedback</span></a>
+    <a href="settings.html" class="nav-link"><span class="nav-icon">⚙️</span><span>Settings</span></a>
+  </nav>
+    <div class="sidebar-footer">
+    <div style="padding:12px 20px 8px;border-top:1px solid var(--border);margin-top:auto;">
+      <div style="font-size:12px;color:var(--text-muted);margin-bottom:10px;">
+        Signed in as <span id="sidebar-username" style="color:var(--gold-light);font-weight:600;">Admin</span>
+      </div>
+      <button onclick="saveurLogout()" style="width:100%;padding:9px 14px;background:rgba(224,92,92,0.1);border:1px solid rgba(224,92,92,0.25);border-radius:8px;color:#e05c5c;font-size:13px;font-weight:500;cursor:pointer;font-family:inherit;transition:all 0.2s;" onmouseover="this.style.background='rgba(224,92,92,0.2)'" onmouseout="this.style.background='rgba(224,92,92,0.1)'">
+        🚪 Sign Out
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- Main -->
+<main class="main">
+  <div class="page-header">
+    <div class="breadcrumb">Menu Management</div>
+    <h2>Menu & Dishes 🍛</h2>
+    <p>Manage your dishes, pricing, availability and photos.</p>
+  </div>
+
+  <!-- Stats -->
+  <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+    <div class="stat-card">
+      <span class="stat-icon">🍽️</span>
+      <div class="stat-label">Total Items</div>
+      <div class="stat-value" id="totalCount">0</div>
+      <div class="stat-change">Across all categories</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">✅</span>
+      <div class="stat-label">Available</div>
+      <div class="stat-value" id="availCount">0</div>
+      <div class="stat-change">In stock today</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">🌿</span>
+      <div class="stat-label">Veg Items</div>
+      <div class="stat-value" id="vegCount">0</div>
+      <div class="stat-change">Vegetarian dishes</div>
+    </div>
+    <div class="stat-card">
+      <span class="stat-icon">⭐</span>
+      <div class="stat-label">Best Seller</div>
+      <div class="stat-value" id="bestSeller">—</div>
+      <div class="stat-change">Most ordered today</div>
+    </div>
+  </div>
+
+  <!-- Toolbar -->
+  <div class="toolbar">
+    <div class="search-box">
+      <span class="search-icon">🔍</span>
+      <input class="form-control" type="text" id="searchInput" placeholder="Search dishes…" oninput="renderMenu()">
+    </div>
+    <select class="form-control" id="sortSelect" style="width:160px;" onchange="renderMenu()">
+      <option value="name">Sort: Name</option>
+      <option value="price_asc">Price: Low → High</option>
+      <option value="price_desc">Price: High → Low</option>
+      <option value="rating">Top Rated</option>
+    </select>
+    <button class="btn btn-primary" onclick="openAddModal()">+ Add Dish</button>
+  </div>
+
+  <!-- Tabs -->
+  <div class="menu-tabs" id="menuTabs"></div>
+
+  <!-- Grid -->
+  <div class="menu-grid" id="menuGrid"></div>
+</main>
+
+<!-- Add/Edit Modal -->
+<div class="modal-overlay" id="itemModal">
+  <div class="modal" style="max-width:580px;">
+    <div class="modal-title" id="modalTitle">Add New Dish</div>
+    <div class="modal-subtitle" id="modalSubtitle">Fill in the details and upload a photo.</div>
+
+    <!-- Image Upload -->
+    <div class="img-preview-wrap" id="imgPreviewWrap" onclick="document.getElementById('imgFileInput').click()">
+      <div class="upload-hint" id="uploadHint">
+        <span>📷</span>
+        <span>Click to upload photo</span>
+        <span style="font-size:11px;color:var(--text-muted);">JPG, PNG · Max 5MB</span>
+      </div>
+    </div>
+    <input type="file" id="imgFileInput" accept="image/*" style="display:none;" onchange="handleImgUpload(event)">
+
+    <div class="form-grid">
+      <div class="form-group full">
+        <label>Dish Name</label>
+        <input class="form-control" id="mName" placeholder="e.g. Butter Chicken">
+      </div>
+      <div class="form-group">
+        <label>Category</label>
+        <select class="form-control" id="mCat">
+          <option>Main Course</option>
+          <option>Starters</option>
+          <option>Breads</option>
+          <option>Beverages</option>
+          <option>Desserts</option>
+          <option>Rice & Biryani</option>
+          <option>Soups</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Price (₹)</label>
+        <input class="form-control" id="mPrice" type="number" placeholder="e.g. 520">
+      </div>
+      <div class="form-group">
+        <label>Type</label>
+        <select class="form-control" id="mType">
+          <option value="veg">🌿 Vegetarian</option>
+          <option value="nonveg">🍗 Non-Vegetarian</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Spice Level</label>
+        <select class="form-control" id="mSpice">
+          <option>Mild</option>
+          <option>Medium</option>
+          <option>Hot</option>
+          <option>Extra Hot</option>
+        </select>
+      </div>
+      <div class="form-group full">
+        <label>Description</label>
+        <textarea class="form-control" id="mDesc" rows="2" placeholder="Brief description of the dish…" style="resize:vertical;"></textarea>
+      </div>
+    </div>
+
+    <div class="modal-actions">
+      <button class="btn btn-outline" onclick="closeModal()">Cancel</button>
+      <button class="btn btn-primary" onclick="saveItem()">💾 Save Dish</button>
+    </div>
+  </div>
+</div>
+
+<!-- Photo Viewer Modal -->
+<div class="photo-modal-overlay" id="photoModal" onclick="closePhotoModal(event)">
+  <button class="photo-modal-close" onclick="closePhotoModal()">✕</button>
+  <img class="photo-modal-img" id="photoModalImg" src="" alt="">
+  <div class="photo-modal-info">
+    <h3 id="photoModalName"></h3>
+    <p id="photoModalDesc"></p>
+  </div>
+</div>
+
+<!-- Toast -->
+<div class="toast" id="toast" style="display:none;">
+  <span class="toast-icon" id="toastIcon">✅</span>
+  <div>
+    <div class="toast-msg" id="toastMsg"></div>
+    <div class="toast-sub" id="toastSub"></div>
+  </div>
+</div>
+
+<script>
+// Food photo URLs — local images used for Chole Bhature, Mango Lassi, Gulab Jamun
+const FOOD_PHOTOS = {
+  'Butter Chicken':       'https://images.unsplash.com/photo-1588166524941-3bf61a9c41db?w=600&q=80',
+  'Dal Makhani':          'https://images.unsplash.com/photo-1546833999-b9f581a1996d?w=600&q=80',
+  'Paneer Tikka':         'https://images.unsplash.com/photo-1567188040759-fb8a883dc6d8?w=600&q=80',
+  'Biryani':              'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80',
+  'Hyderabadi Biryani':   'https://images.unsplash.com/photo-1563379091339-03b21ab4a4f8?w=600&q=80',
+  'Naan':                 'https://images.unsplash.com/photo-1586444248902-2f64eddc13df?w=600&q=80',
+  'Lassi':                'https://images.unsplash.com/photo-1571091718767-18b5b1457add?w=600&q=80',
+  'Gulab Jamun':          'images/gulab_jamun.png',
+  'Thali Special':        'https://images.unsplash.com/photo-1585937421612-70a008356fbe?w=600&q=80',
+  'Chicken Tikka Masala': 'https://images.unsplash.com/photo-1604928141064-207cea6f571f?w=600&q=80',
+  'Palak Paneer':         'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&q=80',
+  'Samosa':               'https://images.unsplash.com/photo-1601050690597-df0568f70950?w=600&q=80',
+  'Mango Lassi':          'images/mango_lassi.png',
+  'Masala Chai':          'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=600&q=80',
+  'Tandoori Chicken':     'https://images.unsplash.com/photo-1599487488170-d11ec9c172f0?w=600&q=80',
+  'Rogan Josh':           'https://images.unsplash.com/photo-1574653853027-5382a3d23a15?w=600&q=80',
+  'Chole Bhature':        'images/chole_bhature.png',
+  'Kheer':                'https://images.unsplash.com/photo-1666353535754-5bd0b0b7eba7?w=600&q=80',
+  'default':              'https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80',
+};
+
+function getPhoto(name) {
+  for (const key of Object.keys(FOOD_PHOTOS)) {
+    if (name.toLowerCase().includes(key.toLowerCase()) || key.toLowerCase().includes(name.toLowerCase())) {
+      return FOOD_PHOTOS[key];
+    }
+  }
+  return FOOD_PHOTOS['default'];
+}
+
+// Initial menu data
+let menuItems = [
+  { id: 1, name: 'Butter Chicken', cat: 'Main Course', price: 520, type: 'nonveg', spice: 'Medium', desc: 'Tender chicken in a rich, creamy tomato-based sauce with aromatic spices.', rating: 4.8, orders: 34, available: true, photo: null },
+  { id: 2, name: 'Dal Makhani',    cat: 'Main Course', price: 360, type: 'veg',    spice: 'Mild',   desc: 'Slow-cooked black lentils with cream and butter, a restaurant classic.', rating: 4.6, orders: 28, available: true, photo: null },
+  { id: 3, name: 'Paneer Tikka',   cat: 'Starters',   price: 440, type: 'veg',    spice: 'Medium', desc: 'Marinated cottage cheese grilled to perfection with bell peppers.', rating: 4.7, orders: 22, available: true, photo: null },
+  { id: 4, name: 'Hyderabadi Biryani', cat: 'Rice & Biryani', price: 480, type: 'nonveg', spice: 'Hot', desc: 'Fragrant basmati rice with marinated meat, saffron & caramelized onions.', rating: 4.9, orders: 19, available: true, photo: null },
+  { id: 5, name: 'Naan',           cat: 'Breads',     price: 80,  type: 'veg',    spice: 'Mild',   desc: 'Soft, fluffy bread baked fresh in our tandoor oven.', rating: 4.5, orders: 55, available: true, photo: null },
+  { id: 6, name: 'Mango Lassi',    cat: 'Beverages',  price: 140, type: 'veg',    spice: 'Mild',   desc: 'Chilled blended yogurt drink with sweet Alphonso mango pulp.', rating: 4.7, orders: 31, available: true, photo: null },
+  { id: 7, name: 'Gulab Jamun',    cat: 'Desserts',   price: 140, type: 'veg',    spice: 'Mild',   desc: 'Soft milk-solid dumplings soaked in rose-flavored sugar syrup.', rating: 4.6, orders: 17, available: true, photo: null },
+  { id: 8, name: 'Thali Special',  cat: 'Main Course', price: 680, type: 'veg',   spice: 'Medium', desc: 'A complete meal with dal, sabzi, rice, roti, pickle and dessert.', rating: 4.8, orders: 14, available: true, photo: null },
+  { id: 9, name: 'Tandoori Chicken', cat: 'Starters', price: 560, type: 'nonveg', spice: 'Hot',   desc: 'Whole chicken marinated in yogurt and spices, char-grilled in tandoor.', rating: 4.7, orders: 26, available: true, photo: null },
+  { id: 10, name: 'Masala Chai',   cat: 'Beverages',  price: 60,  type: 'veg',    spice: 'Mild',   desc: 'Aromatic spiced tea brewed with ginger, cardamom and fresh milk.', rating: 4.4, orders: 42, available: true, photo: null },
+  { id: 11, name: 'Chole Bhature', cat: 'Main Course', price: 280, type: 'veg',   spice: 'Medium', desc: 'Spiced chickpea curry served with deep-fried fluffy bread.', rating: 4.5, orders: 20, available: true,  photo: null },
+  { id: 12, name: 'Kheer',         cat: 'Desserts',   price: 120, type: 'veg',    spice: 'Mild',   desc: 'Creamy rice pudding cooked in milk with cardamom, saffron & dry fruits.', rating: 4.6, orders: 12, available: true, photo: null },
+];
+
+let nextId = 13;
+let activeCategory = 'All';
+let editingId = null;
+let tempPhotoUrl = null;
+
+function getCategories() {
+  const cats = ['All', ...new Set(menuItems.map(i => i.cat))];
+  return cats;
+}
+
+function renderTabs() {
+  const el = document.getElementById('menuTabs');
+  el.innerHTML = getCategories().map(cat => `
+    <button class="tab-btn ${cat === activeCategory ? 'active' : ''}" onclick="setCategory('${cat}')">${cat}
+      <span style="margin-left:6px;font-size:11px;opacity:0.7;">${cat === 'All' ? menuItems.length : menuItems.filter(i=>i.cat===cat).length}</span>
+    </button>
+  `).join('');
+}
+
+function setCategory(cat) {
+  activeCategory = cat;
+  renderTabs();
+  renderMenu();
+}
+
+function renderMenu() {
+  const search = document.getElementById('searchInput').value.toLowerCase();
+  const sort = document.getElementById('sortSelect').value;
+  let items = menuItems.filter(i => {
+    const matchCat = activeCategory === 'All' || i.cat === activeCategory;
+    const matchSearch = i.name.toLowerCase().includes(search) || i.desc.toLowerCase().includes(search);
+    return matchCat && matchSearch;
+  });
+  if (sort === 'price_asc') items.sort((a,b) => a.price - b.price);
+  else if (sort === 'price_desc') items.sort((a,b) => b.price - a.price);
+  else if (sort === 'rating') items.sort((a,b) => b.rating - a.rating);
+  else items.sort((a,b) => a.name.localeCompare(b.name));
+
+  const grid = document.getElementById('menuGrid');
+  if (items.length === 0) {
+    grid.innerHTML = `<div class="empty-state"><div class="empty-icon">🍽️</div><p>No dishes found.</p></div>`;
+    return;
+  }
+  grid.innerHTML = items.map((item, idx) => {
+    const photo = item.photo || getPhoto(item.name);
+    const stars = '★'.repeat(Math.floor(item.rating)) + (item.rating % 1 >= 0.5 ? '½' : '');
+    return `
+      <div class="menu-card ${item.available ? '' : 'unavailable'}" style="animation-delay:${idx*0.06}s">
+        <div class="menu-card-img-wrap">
+          <img class="menu-card-img" src="${photo}" alt="${item.name}" loading="lazy"
+               onerror="this.src='https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=600&q=80'"
+               onclick="openPhotoModal(${item.id})">
+          <div class="menu-card-veg ${item.type}">${item.type === 'veg' ? '●' : '●'}</div>
+          <span class="menu-card-badge">₹${item.price}</span>
+          <button class="stock-toggle ${item.available ? 'in-stock' : 'out-stock'}"
+                  onclick="toggleStock(${item.id}, event)">
+            ${item.available ? '✓ In Stock' : '✗ Out'}
+          </button>
+        </div>
+        <div class="menu-card-body">
+          <div class="rating-stars">${stars} <span style="color:var(--text-muted);font-size:11px;">${item.rating} · ${item.orders} orders</span></div>
+          <div class="menu-card-name">${item.name}</div>
+          <div class="menu-card-desc">${item.desc}</div>
+          <div class="menu-card-footer">
+            <div class="menu-price">₹${item.price}</div>
+            <div class="menu-card-actions">
+              <button class="btn-icon-sm" onclick="openPhotoModal(${item.id})" title="View Photo">🖼️</button>
+              <button class="btn-icon-sm" onclick="openEditModal(${item.id})" title="Edit">✏️</button>
+              <button class="btn-icon-sm del" onclick="deleteItem(${item.id})" title="Delete">🗑️</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    `;
+  }).join('');
+
+  // Update stats
+  document.getElementById('totalCount').textContent = menuItems.length;
+  document.getElementById('availCount').textContent = menuItems.filter(i=>i.available).length;
+  document.getElementById('vegCount').textContent = menuItems.filter(i=>i.type==='veg').length;
+  const best = [...menuItems].sort((a,b) => b.orders - a.orders)[0];
+  document.getElementById('bestSeller').textContent = best ? best.name.split(' ')[0] : '—';
+}
+
+function toggleStock(id, e) {
+  e.stopPropagation();
+  const item = menuItems.find(i => i.id === id);
+  if (item) { item.available = !item.available; renderMenu(); }
+}
+
+function openPhotoModal(id) {
+  const item = menuItems.find(i => i.id === id);
+  if (!item) return;
+  const photo = item.photo || getPhoto(item.name);
+  document.getElementById('photoModalImg').src = photo;
+  document.getElementById('photoModalName').textContent = item.name;
+  document.getElementById('photoModalDesc').textContent = `${item.cat} · ₹${item.price} · ${item.rating}★`;
+  document.getElementById('photoModal').classList.add('open');
+}
+
+function closePhotoModal(e) {
+  if (!e || e.target === document.getElementById('photoModal') || e.currentTarget === document.querySelector('.photo-modal-close')) {
+    document.getElementById('photoModal').classList.remove('open');
+  }
+}
+
+function openAddModal() {
+  editingId = null;
+  tempPhotoUrl = null;
+  document.getElementById('modalTitle').textContent = 'Add New Dish';
+  document.getElementById('modalSubtitle').textContent = 'Fill in the details and upload a photo.';
+  ['mName','mDesc'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('mPrice').value = '';
+  document.getElementById('mCat').value = 'Main Course';
+  document.getElementById('mType').value = 'veg';
+  document.getElementById('mSpice').value = 'Medium';
+  resetImgPreview();
+  document.getElementById('itemModal').classList.add('open');
+}
+
+function openEditModal(id) {
+  const item = menuItems.find(i => i.id === id);
+  if (!item) return;
+  editingId = id;
+  tempPhotoUrl = item.photo;
+  document.getElementById('modalTitle').textContent = 'Edit Dish';
+  document.getElementById('modalSubtitle').textContent = 'Update the dish details or photo.';
+  document.getElementById('mName').value = item.name;
+  document.getElementById('mCat').value = item.cat;
+  document.getElementById('mPrice').value = item.price;
+  document.getElementById('mType').value = item.type;
+  document.getElementById('mSpice').value = item.spice;
+  document.getElementById('mDesc').value = item.desc;
+  const photo = item.photo || getPhoto(item.name);
+  setImgPreview(photo);
+  document.getElementById('itemModal').classList.add('open');
+}
+
+function closeModal() { document.getElementById('itemModal').classList.remove('open'); }
+
+function handleImgUpload(e) {
+  const file = e.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    tempPhotoUrl = ev.target.result;
+    setImgPreview(tempPhotoUrl);
+  };
+  reader.readAsDataURL(file);
+}
+
+function setImgPreview(url) {
+  const wrap = document.getElementById('imgPreviewWrap');
+  document.getElementById('uploadHint').style.display = 'none';
+  let img = wrap.querySelector('img');
+  if (!img) { img = document.createElement('img'); wrap.appendChild(img); }
+  img.src = url; img.style.display = 'block';
+}
+
+function resetImgPreview() {
+  const wrap = document.getElementById('imgPreviewWrap');
+  document.getElementById('uploadHint').style.display = 'flex';
+  const img = wrap.querySelector('img');
+  if (img) img.remove();
+}
+
+function saveItem() {
+  const name  = document.getElementById('mName').value.trim();
+  const price = parseInt(document.getElementById('mPrice').value);
+  if (!name || !price) { showToast('Missing fields', 'Name and price are required.', '⚠️'); return; }
+
+  if (editingId) {
+    const item = menuItems.find(i => i.id === editingId);
+    Object.assign(item, {
+      name, price, cat: document.getElementById('mCat').value,
+      type: document.getElementById('mType').value, spice: document.getElementById('mSpice').value,
+      desc: document.getElementById('mDesc').value.trim(), photo: tempPhotoUrl
+    });
+    showToast('Dish updated!', name + ' has been saved.', '✅');
+  } else {
+    menuItems.push({
+      id: nextId++, name, price,
+      cat: document.getElementById('mCat').value,
+      type: document.getElementById('mType').value,
+      spice: document.getElementById('mSpice').value,
+      desc: document.getElementById('mDesc').value.trim(),
+      rating: 4.5, orders: 0, available: true, photo: tempPhotoUrl
+    });
+    showToast('Dish added!', name + ' added to menu.', '🍽️');
+  }
+  closeModal();
+  renderTabs();
+  renderMenu();
+}
+
+function deleteItem(id) {
+  const item = menuItems.find(i => i.id === id);
+  if (!item) return;
+  if (!confirm(`Remove "${item.name}" from the menu?`)) return;
+  menuItems = menuItems.filter(i => i.id !== id);
+  renderTabs();
+  renderMenu();
+  showToast('Dish removed', item.name + ' deleted.', '🗑️');
+}
+
+function showToast(msg, sub, icon='✅') {
+  const t = document.getElementById('toast');
+  document.getElementById('toastMsg').textContent = msg;
+  document.getElementById('toastSub').textContent = sub;
+  document.getElementById('toastIcon').textContent = icon;
+  t.style.display = 'flex'; t.classList.remove('hide');
+  setTimeout(() => { t.classList.add('hide'); setTimeout(()=>{ t.style.display='none'; t.classList.remove('hide'); }, 300); }, 3500);
+}
+
+// Close modal on backdrop
+document.getElementById('itemModal').addEventListener('click', e => {
+  if (e.target === document.getElementById('itemModal')) closeModal();
+});
+
+// Init
+renderTabs();
+renderMenu();
+</script>
+
+<!-- Auth Guard -->
+<script>
+(function() {
+  var tok = localStorage.getItem("saveur_token") || sessionStorage.getItem("saveur_token");
+  if (!tok) { window.location.href = "login.html"; return; }
+  // Validate token not expired (8 hour limit)
+  try {
+    var payload = JSON.parse(atob(tok));
+    var AGE_LIMIT = 8 * 60 * 60 * 1000;
+    if (!payload.ts || (Date.now() - payload.ts) >= AGE_LIMIT) {
+      localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+      sessionStorage.removeItem("saveur_token");
+      window.location.href = "login.html"; return;
+    }
+    var token = tok;
+  } catch(e) {
+    localStorage.removeItem("saveur_token"); localStorage.removeItem("saveur_user");
+    sessionStorage.removeItem("saveur_token");
+    window.location.href = "login.html"; return;
+  }
+  try {
+    var user = JSON.parse(localStorage.getItem("saveur_user") || "{}");
+    var el = document.getElementById("sidebar-username");
+    if (el && user.name) el.textContent = user.name;
+  } catch(e) {}
+})();
+function saveurLogout() {
+  localStorage.removeItem("saveur_token");
+  localStorage.removeItem("saveur_user");
+  sessionStorage.removeItem("saveur_token");
+  window.location.href = "login.html";
+}
+</script>
+</body>
+</html>
